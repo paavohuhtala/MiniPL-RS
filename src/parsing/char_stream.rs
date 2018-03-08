@@ -17,17 +17,6 @@ impl<'a> CharStream<'a> {
     CharStream { chars, offset: 0 }
   }
 
-  // Reads one character from the input stream, and advances it by one if succesful.
-  pub fn next(&mut self) -> Result<char, CharStreamError> {
-    let ch = self.peek();
-
-    if ch.is_ok() {
-      self.offset += 1;
-    }
-
-    ch
-  }
-
   pub fn advance(&mut self) {
     self.offset = min(self.chars.len(), self.offset + 1);
   }
@@ -45,16 +34,8 @@ impl<'a> CharStream<'a> {
     self.offset >= self.chars.len()
   }
 
-  fn substream_at(&self, offset: usize) -> CharStream<'a> {
-    CharStream::new(&self.chars[offset..])
-  }
-
   fn slice_at(&self, offset: usize, length: usize) -> &'a [char] {
     &self.chars[offset..offset + length]
-  }
-
-  pub fn backtrack(&mut self, n: usize) {
-    self.offset -= n;
   }
 
   pub fn advance_until<F>(&mut self, pred: F)
