@@ -209,6 +209,11 @@ where
     let mut statements = Vec::new();
 
     loop {
+      // If we reached end of file, stop parsing.
+      if self.lexer.peek()? == Token::EndOfFile {
+        break;
+      }
+
       let statement = self.parse_statement()?;
 
       println!("Statement: {:?}", statement);
