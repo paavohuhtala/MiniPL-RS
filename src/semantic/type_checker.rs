@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use parsing::types::*;
+use common::types::*;
 use parsing::ast::*;
 
 #[derive(Debug)]

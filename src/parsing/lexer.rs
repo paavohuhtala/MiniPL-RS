@@ -1,7 +1,8 @@
+use common::types::*;
+use common::errors::*;
+
 use parsing::util::*;
-use parsing::errors::*;
 use parsing::char_stream::*;
-use parsing::types::*;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if let Ok(ch) = input.peek() {

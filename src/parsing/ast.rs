@@ -1,4 +1,4 @@
-use parsing::types::*;
+use common::types::*;
 
 #[derive(Debug)]
 pub enum Expression {

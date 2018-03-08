@@ -2,7 +2,8 @@
 // with support for backtracking.
 
 use std::cmp::min;
-use parsing::errors::CharStreamError;
+
+use common::errors::*;
 
 #[derive(Debug)]
 pub struct CharStream<'a> {
