@@ -7,6 +7,8 @@ pub enum Expression {
   // We have to heap allocate the sub expressions, because otherwise this type wouldn't have a fixed (maximum) size.
   Add(Box<(Expression, Expression)>),
   Sub(Box<(Expression, Expression)>),
+  Mul(Box<(Expression, Expression)>),
+  Div(Box<(Expression, Expression)>),
 }
 
 #[derive(Debug)]

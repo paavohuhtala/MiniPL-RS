@@ -52,7 +52,7 @@ impl TypeCheckingContext {
           Err(TypeError::UndeclaredIdentifier(variable.to_string()))
         }
       }
-      Add(ref param_box) | Sub(ref param_box) => {
+      Add(ref param_box) | Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression(param_box)?;
         Self::assert_types_equal(left, right)?;
         Ok(left)

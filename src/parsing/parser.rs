@@ -2,7 +2,6 @@ use common::types::*;
 use common::errors::*;
 
 use parsing::ast::*;
-
 use parsing::lexer::BufferedLexer;
 
 pub struct Parser<'a> {
@@ -107,12 +106,13 @@ impl<'a> Parser<'a> {
     })
   }
 
-  // Implements the shunting yard algorithm
+  // Parses expressions using a modified version of the shunting yard algorithm.
   pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
     let mut output: Vec<Expression> = Vec::new();
     let mut operators: Vec<Operator> = Vec::new();
 
-    fn push_node(operator: Operator, output: &mut Vec<Expression>) {
+    // We don't need to access this from outside, so this function can be local.
+    fn create_node(operator: Operator, output: &mut Vec<Expression>) {
       let node = match operator.get_arity() {
         Arity::Binary => {
           let left = output.pop().unwrap();
@@ -122,6 +122,8 @@ impl<'a> Parser<'a> {
           match operator {
             Operator::Add => Expression::Add(args),
             Operator::Sub => Expression::Sub(args),
+            Operator::Mul => Expression::Mul(args),
+            Operator::Div => Expression::Div(args),
             _ => panic!("Not implemented yet."),
           }
         }
@@ -135,13 +137,41 @@ impl<'a> Parser<'a> {
       let next = self.lexer.peek()?;
 
       match next {
-        // Numbers and variables are pushed to the output stack
+        // Literals are just pushed to the output stack
         Token::Literal(value) => {
           self.advance()?;
           output.push(Expression::Literal(value));
         }
+        // When an operator is encountered, we need to make sure operator precedence holds.
+        // This means that if previously added operator(s) have highers precedence, we must
+        // handle them before adding this to the operator stack.
         Token::Operator(op) => {
           self.advance()?;
+
+          // To get around lifetime limitations, we'll do this in two passes:
+
+          let mut indices_to_pop = 0;
+
+          // 1. Iterate from back to front.
+          for op_to_pop in operators.iter().rev() {
+            // If we encounter an operator with lower or equal precedence, stop.
+            if op_to_pop.get_precedence() <= op.get_precedence() {
+              break;
+            }
+
+            // Mark this operator to be popped, and create the AST node for it.
+            indices_to_pop += 1;
+            create_node(*op_to_pop, &mut output);
+          }
+
+          // 2. Drop `indices_to_pop` entries, from back to front.
+          if indices_to_pop > 0 {
+            let operators_length = operators.len();
+            operators.drain(operators_length - indices_to_pop..operators_length);
+            assert_eq!(operators_length - indices_to_pop, operators.len());
+          }
+
+          // Finally, push the operator to the stack.
           operators.push(op);
         }
         _ => break,
@@ -149,7 +179,7 @@ impl<'a> Parser<'a> {
     }
 
     for operator in operators.iter().rev() {
-      push_node(*operator, &mut output);
+      create_node(*operator, &mut output);
     }
 
     println!("Expression: {:?}", output);
