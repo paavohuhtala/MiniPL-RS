@@ -143,6 +143,10 @@ where
           self.advance()?;
           output.push(Expression::Literal(value));
         }
+        Token::Identifier(identifier) => {
+          self.advance()?;
+          output.push(Expression::Variable(identifier));
+        }
         // When an operator is encountered, we need to make sure operator precedence holds.
         // This means that if previously added operator(s) have highers precedence, we must
         // handle them before adding this to the operator stack.
@@ -215,6 +219,8 @@ where
         break;
       }
     }
+
+    self.expect_eq(&Token::EndOfFile)?;
 
     Ok(statements)
   }

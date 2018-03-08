@@ -3,7 +3,7 @@ use std::io::Error;
 use common::types::*;
 
 // The error types form a hierarchy.
-// Lower level errors can be implicitly cast to higher level errors, e.g
+// Lower level errors can be implicitly casted to higher level errors, e.g
 // CharStreamError::EndOfFile is automatically converted to
 // LexerError::CharStreamError(EndOfFile)
 

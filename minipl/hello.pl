@@ -1,4 +1,6 @@
 print "Hello, world!";
-print "Hello world, again!!";
-var z : string := "This is a string.";
-var sum : int := 10 + 20 * 101 + 666;
+
+var a : int := 10;
+var b : int := 20;
+var sumSquared : int := a + b;
+print sumSquared;

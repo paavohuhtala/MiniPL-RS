@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TypeName {
   IntType,
@@ -6,9 +8,38 @@ pub enum TypeName {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+/// These values exist at parse time.
 pub enum LiteralValue {
   StringLiteral(String),
   IntLiteral(i32),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// These values exist at runtime.
+pub enum Value {
+  IntV(i32),
+  StringV(String),
+  BoolV(bool),
+}
+
+// Literals can be implicitly casted to runtime values.
+impl From<LiteralValue> for Value {
+  fn from(literal: LiteralValue) -> Value {
+    match literal {
+      LiteralValue::IntLiteral(i) => Value::IntV(i),
+      LiteralValue::StringLiteral(s) => Value::StringV(s),
+    }
+  }
+}
+
+impl fmt::Display for Value {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match *self {
+      Value::StringV(ref s) => write!(f, "{}", s),
+      Value::IntV(i) => write!(f, "{}", i),
+      Value::BoolV(b) => write!(f, "{}", if b { "true" } else { "false" }),
+    }
+  }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -29,15 +60,14 @@ pub enum Arity {
   Binary,
 }
 
-// https://eli.thegreenplace.net/2010/01/02/top-down-operator-precedence-parsing
 impl Operator {
   pub fn get_precedence(self) -> u8 {
     use Operator::*;
     match self {
-      Not => 30,
-      Mul | Div => 20,
-      Add | Sub | And => 10,
-      LessThan | Equal => 5,
+      Not => 3,
+      Mul | Div => 2,
+      Add | Sub | And => 1,
+      LessThan | Equal => 0,
     }
   }
 
@@ -63,6 +93,7 @@ pub enum Token {
   Assign,
   Print,
   Var,
+  EndOfFile
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -78,6 +109,7 @@ pub enum TokenKind {
   AssignK,
   PrintK,
   VarK,
+  EndOfFileK
 }
 
 impl Token {
@@ -94,6 +126,7 @@ impl Token {
       Token::Assign => TokenKind::AssignK,
       Token::Print => TokenKind::PrintK,
       Token::Var => TokenKind::VarK,
+      Token::EndOfFile => TokenKind::EndOfFileK
     }
   }
 

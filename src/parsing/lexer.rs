@@ -83,6 +83,10 @@ fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
   // Skip whitespace
   input.advance_until(|ch| !is_whitespace(ch));
 
+  if input.reached_end() {
+    return Ok(Token::EndOfFile);
+  }
+
   // TODO: Check for tokens.
   let first = input.peek()?;
 

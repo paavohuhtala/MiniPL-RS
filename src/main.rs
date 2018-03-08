@@ -15,6 +15,10 @@ use parsing::parser::*;
 mod semantic;
 use semantic::type_checker::type_check;
 
+mod interpreter;
+use interpreter::{Interpreter};
+use interpreter::console_io::ConsoleIo;
+
 fn read_file<P: AsRef<Path>>(path: P) -> Result<Vec<char>, std::io::Error> {
   let mut input_file = std::fs::File::open(path)?;
   let mut input_source = String::new();
@@ -43,5 +47,10 @@ fn main() {
 
   if let Err(type_error) = type_check(&statements) {
     println!("Type error: {:?}", type_error);
+    return;
   }
+
+  // Create a new interpreter, passing ConsoleIo as the IO handler.
+  let mut interpreter = Interpreter::new(ConsoleIo);
+  interpreter.execute(&statements);
 }
