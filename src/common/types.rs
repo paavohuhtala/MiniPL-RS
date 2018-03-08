@@ -65,7 +65,7 @@ pub enum Token {
   Var,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenKind {
   IdentifierK,
   LiteralK,

@@ -34,7 +34,7 @@ impl TypeCheckingContext {
 
   fn evaluate_binary_expression(
     &self,
-    params: &Box<(Expression, Expression)>,
+    params: &(Expression, Expression),
   ) -> Result<(TypeName, TypeName), TypeError> {
     let left = self.evaluate_expression_type(&params.0)?;
     let right = self.evaluate_expression_type(&params.1)?;
@@ -43,16 +43,16 @@ impl TypeCheckingContext {
 
   fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
     use Expression::*;
-    match expression {
-      &Literal(ref literal) => Ok(self.get_literal_type(&literal)),
-      &Variable(ref variable) => {
+    match *expression {
+      Literal(ref literal) => Ok(self.get_literal_type(literal)),
+      Variable(ref variable) => {
         if let Some(symbol_type) = self.symbols.get(variable) {
           Ok(*symbol_type)
         } else {
           Err(TypeError::UndeclaredIdentifier(variable.to_string()))
         }
       }
-      &Add(ref param_box) | &Sub(ref param_box) => {
+      Add(ref param_box) | Sub(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression(param_box)?;
         Self::assert_types_equal(left, right)?;
         Ok(left)
@@ -81,8 +81,8 @@ impl TypeCheckingContext {
         }
 
         // If the variable has been initialised, make sure it matches the type annotation.
-        if let &Some(ref initial_value) = initial {
-          let initial_value_type = self.evaluate_expression_type(&initial_value)?;
+        if let Some(ref initial_value) = *initial {
+          let initial_value_type = self.evaluate_expression_type(initial_value)?;
           Self::assert_types_equal(*type_of, initial_value_type)?;
         }
 
@@ -102,7 +102,7 @@ impl TypeCheckingContext {
   }
 }
 
-pub fn type_check(program: &Program) -> Result<(), TypeError> {
+pub fn type_check(program: &[Statement]) -> Result<(), TypeError> {
   let mut context = TypeCheckingContext {
     symbols: HashMap::new(),
   };

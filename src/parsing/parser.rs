@@ -28,7 +28,7 @@ impl Token {
 
   pub fn expect_type(&self) -> Result<TypeName, ParserError> {
     match self {
-      &Token::Type(ref type_name) => Ok(type_name.clone()),
+      &Token::Type(ref type_name) => Ok(*type_name),
       other => Err(ParserError::UnexpectedToken {
         expected: TokenKind::TypeK,
         was: other.get_kind(),
@@ -89,14 +89,14 @@ impl<'a> Parser<'a> {
     let type_of = self.lexer.peek()?.expect_type()?;
     self.advance()?;
 
-    let mut initial_value = None;
-
-    if self.lexer.peek()? == Token::Assign {
+    let initial_value = if self.lexer.peek()? == Token::Assign {
       self.advance()?;
 
       let expression = self.parse_expression()?;
-      initial_value = Some(expression);
-    }
+      Some(expression)
+    } else {
+      None
+    };
 
     self.expect_eq(&Token::Semicolon)?;
 
