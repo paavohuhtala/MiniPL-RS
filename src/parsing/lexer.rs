@@ -3,6 +3,7 @@ use common::errors::*;
 
 use parsing::util::*;
 use parsing::char_stream::*;
+use parsing::token_source::TokenSource;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if let Ok(ch) = input.peek() {
@@ -123,8 +124,10 @@ impl<'a> BufferedLexer<'a> {
       tokens: Vec::new(),
     }
   }
+}
 
-  pub fn advance(&mut self) {
+impl<'a> TokenSource for BufferedLexer<'a> {
+  fn advance(&mut self) {
     if self.tokens.is_empty() {
       self.stream.advance();
     } else {
@@ -132,11 +135,11 @@ impl<'a> BufferedLexer<'a> {
     }
   }
 
-  pub fn reached_end(&self) -> bool {
+  fn reached_end(&self) -> bool {
     self.tokens.is_empty() && self.stream.reached_end()
   }
 
-  pub fn peek(&mut self) -> Result<Token, LexerError> {
+  fn peek(&mut self) -> Result<Token, LexerError> {
     if self.tokens.is_empty() {
       let next = next_lexeme(&mut self.stream)?;
       self.tokens.push(next.clone());
@@ -149,7 +152,7 @@ impl<'a> BufferedLexer<'a> {
     }
   }
 
-  pub fn next(&mut self) -> Result<Token, LexerError> {
+  fn next(&mut self) -> Result<Token, LexerError> {
     if self.tokens.is_empty() {
       next_lexeme(&mut self.stream)
     } else {

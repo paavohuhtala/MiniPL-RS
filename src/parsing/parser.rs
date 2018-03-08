@@ -2,16 +2,10 @@ use common::types::*;
 use common::errors::*;
 
 use parsing::ast::*;
-use parsing::lexer::BufferedLexer;
+use parsing::token_source::TokenSource;
 
-pub struct Parser<'a> {
-  lexer: BufferedLexer<'a>,
-}
-
-impl<'a> Parser<'a> {
-  pub fn new(lexer: BufferedLexer<'a>) -> Parser {
-    Parser { lexer }
-  }
+pub struct Parser<T: TokenSource> {
+  lexer: T,
 }
 
 impl Token {
@@ -38,7 +32,14 @@ impl Token {
 
 type ParseResult<T> = Result<T, ParserError>;
 
-impl<'a> Parser<'a> {
+impl<T> Parser<T>
+where
+  T: TokenSource,
+{
+  pub fn new(lexer: T) -> Parser<T> {
+    Parser { lexer }
+  }
+
   fn expect_eq(&mut self, token: &Token) -> Result<(), ParserError> {
     match self.lexer.peek()? {
       ref parsed_token if parsed_token == token => {
@@ -148,7 +149,7 @@ impl<'a> Parser<'a> {
         Token::Operator(op) => {
           self.advance()?;
 
-          // To get around lifetime limitations, we'll do this in two passes:
+          // To get around lifetime limitations, we'll do this in two parts:
 
           let mut indices_to_pop = 0;
 

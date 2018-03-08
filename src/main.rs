@@ -25,10 +25,16 @@ fn read_file<P: AsRef<Path>>(path: P) -> Result<Vec<char>, std::io::Error> {
 }
 
 fn main() {
+  // Read the file into a character vector.
   let input_chars = read_file("./minipl/hello.pl").expect("File should be readable.");
-  let input_stream = CharStream::new(&input_chars);
 
+  // This is our compiler pipeline:
+
+  // Wraps the input into a stream-like type, to make it easier to use.
+  let input_stream = CharStream::new(&input_chars);
+  // Splits the stream into tokens, and buffers them to allow peeking and backtracking.
   let lexer = BufferedLexer::new(input_stream);
+  // Parses the token stream into an AST.
   let mut parser = Parser::new(lexer);
 
   let statements = parser
