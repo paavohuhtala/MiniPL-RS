@@ -26,7 +26,7 @@ struct TypeCheckingContext {
 
 impl TypeCheckingContext {
   fn get_literal_type(&self, literal: &LiteralValue) -> TypeName {
-    use LiteralValue::*;
+    use self::LiteralValue::*;
     match *literal {
       StringLiteral(_) => TypeName::StringType,
       IntLiteral(_) => TypeName::IntType,
@@ -43,7 +43,7 @@ impl TypeCheckingContext {
   }
 
   fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
-    use Expression::*;
+    use self::Expression::*;
     match *expression {
       Literal(ref literal) => Ok(self.get_literal_type(literal)),
       Variable(ref variable) => {

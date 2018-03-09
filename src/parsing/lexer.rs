@@ -166,3 +166,36 @@ impl<'a> TokenSource for BufferedLexer<'a> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use parsing::lexer_test_util::*;
+  use common::types::Token::*;
+
+  #[test]
+  pub fn basic_expression() {
+    let tokens = lex("1 + 2 + x");
+    assert_eq!(
+      tokens,
+      [number(1), add_op(), number(2), add_op(), variable("x")]
+    );
+  }
+
+  #[test]
+  pub fn basic_expression_without_space() {
+    let tokens = lex("1+2+x");
+    assert_eq!(
+      tokens,
+      [number(1), add_op(), number(2), add_op(), variable("x")]
+    );
+  }
+
+  #[test]
+  pub fn basic_lookahead() {
+    let tokens = lex(": = :=");
+    assert_eq!(
+      tokens,
+      [Colon, equal_op(), Assign]
+    );
+  }
+}

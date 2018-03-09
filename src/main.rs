@@ -1,23 +1,16 @@
-#![feature(slice_patterns)]
+extern crate miniplrs;
 
-use std::io::Read;
 use std::path::Path;
+use std::io::Read;
 
-mod common;
-use common::types::*;
+use miniplrs::parsing::char_stream::*;
+use miniplrs::parsing::lexer::*;
+use miniplrs::parsing::parser::*;
 
-mod parsing;
-use parsing::char_stream::*;
-use parsing::lexer::*;
-use parsing::ast::*;
-use parsing::parser::*;
+use miniplrs::semantic::type_checker::type_check;
 
-mod semantic;
-use semantic::type_checker::type_check;
-
-mod runtime;
-use runtime::{Interpreter};
-use runtime::console_io::ConsoleIo;
+use miniplrs::runtime::Interpreter;
+use miniplrs::runtime::console_io::ConsoleIo;
 
 fn read_file<P: AsRef<Path>>(path: P) -> Result<Vec<char>, std::io::Error> {
   let mut input_file = std::fs::File::open(path)?;

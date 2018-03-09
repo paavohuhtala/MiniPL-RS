@@ -3,4 +3,12 @@ name = "miniplrs"
 version = "0.1.0"
 authors = ["paavohuhtala <paavo.huhtala@gmail.com>"]
 
+[lib]
+name = "miniplrs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "miniplrsi"
+path = "src/main.rs"
+
 [dependencies]

@@ -62,7 +62,7 @@ pub enum Arity {
 
 impl Operator {
   pub fn get_precedence(self) -> u8 {
-    use Operator::*;
+    use self::Operator::*;
     match self {
       Not => 3,
       Mul | Div => 2,
@@ -72,7 +72,7 @@ impl Operator {
   }
 
   pub fn get_arity(self) -> Arity {
-    use Operator::*;
+    use self::Operator::*;
     match self {
       Add | Sub | Mul | Div | LessThan | Equal | And => Arity::Binary,
       Not => Arity::Unary,
