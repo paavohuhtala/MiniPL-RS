@@ -1,13 +1,18 @@
 use std::collections::HashMap;
 
-use common::types::Value;
+use common::types::{TypeName, Value};
 
 use parsing::ast::*;
 
 use runtime::io::Io;
 
+struct Variable {
+  type_of: TypeName,
+  value: Option<Value>,
+}
+
 pub struct Interpreter<'a, T: Io + 'a> {
-  variables: HashMap<String, Option<Value>>,
+  variables: HashMap<String, Variable>,
   io: &'a mut T,
 }
 
@@ -19,8 +24,15 @@ impl<'a, T: Io> Interpreter<'a, T> {
     }
   }
 
-  fn assign(&mut self, identifier: &str, value: Option<Value>) {
-    self.variables.insert(identifier.to_string(), value);
+  fn declare(&mut self, identifier: &str, type_of: TypeName, value: Option<Value>) {
+    self
+      .variables
+      .insert(identifier.to_string(), Variable { type_of, value });
+  }
+
+  fn assign(&mut self, identifier: &str, value: Value) {
+    let variable = self.variables.get_mut(identifier).unwrap();
+    variable.value = Some(value);
   }
 
   fn evaluate_binary_expression(&self, params: &(Expression, Expression)) -> (Value, Value) {
@@ -31,16 +43,19 @@ impl<'a, T: Io> Interpreter<'a, T> {
 
   fn evaluate_expression(&self, expression: &Expression) -> Value {
     match *expression {
-      // Into casts the literal value into a runtime value
+      // `Into` casts the literal value into a runtime value
       Expression::Literal(ref value) => value.clone().into(),
       Expression::Variable(ref variable) => {
-        let var = self
+        let var = *self
           .variables
           .get(variable)
+          .as_ref()
           .expect("Type checker will prevent the use of undecleared variables.");
         var
-          .clone()
+          .value
+          .as_ref()
           .expect("Type checker will prevent the use of uninitialised variables.")
+          .clone()
       }
       Expression::Add(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
@@ -63,12 +78,10 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left == right)
       }
-      Expression::Not(ref param) => {
-        match self.evaluate_expression(param) {
-          Value::BoolV(b) => Value::BoolV(!b),
-          _ => panic!("Type checker will prevent this.")
-        }
-      }
+      Expression::Not(ref param) => match self.evaluate_expression(param) {
+        Value::BoolV(b) => Value::BoolV(!b),
+        _ => panic!("Type checker will prevent this."),
+      },
       ref _other => panic!("Not supported."),
     }
   }
@@ -78,19 +91,40 @@ impl<'a, T: Io> Interpreter<'a, T> {
       // We trust the type checker, so we don't have to check the type at runtime.
       Statement::Declare {
         ref name,
+        ref type_of,
         ref initial,
         ..
       } => {
         let initial_value = initial.as_ref().map(|expr| self.evaluate_expression(expr));
-        self.assign(name, initial_value);
+        self.declare(name, *type_of, initial_value);
       }
       Statement::Assign(ref name, ref value) => {
         let value = self.evaluate_expression(value);
-        self.assign(name, Some(value));
+        self.assign(name, value);
       }
       Statement::Print(ref expr) => {
         let value = self.evaluate_expression(expr);
         self.io.write_line(&value.to_string());
+      }
+      Statement::Read(ref name) => {
+        let str_value = self.io.read_line();
+
+        match *self.variables.get(name).unwrap() {
+          Variable {
+            type_of: TypeName::StringType,
+            ..
+          } => {
+            self.assign(name, Value::StringV(str_value));
+          }
+          Variable {
+            type_of: TypeName::IntType,
+            ..
+          } => {
+            let as_int = str::parse(&str_value).unwrap();
+            self.assign(name, Value::IntV(as_int));
+          }
+          _ => panic!("Type checker will handle this"),
+        }
       }
       Statement::Assert(ref expr) => {
         let value = self.evaluate_expression(expr);

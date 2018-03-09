@@ -22,6 +22,16 @@ pub enum Value {
   BoolV(bool),
 }
 
+impl Value {
+  pub fn get_type(&self) -> TypeName {
+    match *self {
+      Value::IntV(_) => TypeName::IntType,
+      Value::StringV(_) => TypeName::StringType,
+      Value::BoolV(_) => TypeName::BoolType
+    }
+  }
+}
+
 // Literals can be implicitly casted to runtime values.
 impl From<LiteralValue> for Value {
   fn from(literal: LiteralValue) -> Value {
@@ -92,9 +102,10 @@ pub enum Token {
   Colon,
   Assign,
   Print,
+  Read,
   Var,
   Assert,
-  EndOfFile
+  EndOfFile,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -109,9 +120,10 @@ pub enum TokenKind {
   ColonK,
   AssignK,
   PrintK,
+  ReadK,
   VarK,
   AssertK,
-  EndOfFileK
+  EndOfFileK,
 }
 
 impl Token {
@@ -127,9 +139,10 @@ impl Token {
       Token::RParen => TokenKind::RParenK,
       Token::Assign => TokenKind::AssignK,
       Token::Print => TokenKind::PrintK,
+      Token::Read => TokenKind::ReadK,
       Token::Var => TokenKind::VarK,
       Token::Assert => TokenKind::AssertK,
-      Token::EndOfFile => TokenKind::EndOfFileK
+      Token::EndOfFile => TokenKind::EndOfFileK,
     }
   }
 

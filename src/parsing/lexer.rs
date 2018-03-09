@@ -36,6 +36,7 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
   // have to compare using slice patterns.
   match *chars {
     ['p', 'r', 'i', 'n', 't'] => Ok(Token::Print),
+    ['r', 'e', 'a', 'd'] => Ok(Token::Read),
     ['i', 'n', 't'] => Ok(Token::Type(TypeName::IntType)),
     ['b', 'o', 'o', 'l'] => Ok(Token::Type(TypeName::BoolType)),
     ['s', 't', 'r', 'i', 'n', 'g'] => Ok(Token::Type(TypeName::StringType)),

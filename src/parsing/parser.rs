@@ -69,9 +69,23 @@ impl<T: TokenSource> Parser<T> {
 
   fn parse_print_statement(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Print)?;
+    
     let value = self.parse_expression()?;
+
     self.expect_eq(&Token::Semicolon)?;
+
     Ok(Statement::Print(value))
+  }
+
+  fn parse_read_statement(&mut self) -> Result<Statement, ParserError> {
+    self.expect_eq(&Token::Read)?;
+
+    let identifier = self.lexer.peek()?.expect_identifier()?;
+    self.advance()?;
+
+    self.expect_eq(&Token::Semicolon)?;
+
+    Ok(Statement::Read(identifier))
   }
 
   fn parse_decleration(&mut self) -> Result<Statement, ParserError> {
@@ -110,7 +124,7 @@ impl<T: TokenSource> Parser<T> {
     self.expect_eq(&Token::Assign)?;
 
     let value = self.parse_expression()?;
-    
+
     self.expect_eq(&Token::Semicolon)?;
 
     Ok(Statement::Assign(identifier, value))
@@ -254,6 +268,7 @@ impl<T: TokenSource> Parser<T> {
     let first = self.lexer.peek()?;
     match first {
       Token::Print => self.parse_print_statement(),
+      Token::Read => self.parse_read_statement(),
       Token::Var => self.parse_decleration(),
       Token::Assert => self.parse_assertion(),
       Token::Identifier(_) => self.parse_assignment(),

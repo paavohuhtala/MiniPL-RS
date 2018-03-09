@@ -25,8 +25,8 @@ pub enum Statement {
   },
   Assign(String, Expression),
   For,
-  Read,
   Print(Expression),
+  Read(String),
   Assert(Expression),
 }
 

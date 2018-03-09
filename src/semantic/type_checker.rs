@@ -17,7 +17,8 @@ pub enum TypeError {
     was: TypeName,
   },
   PrintArgumentError(TypeName),
-  AssertArgumentError(TypeName)
+  ReadArgumentError(TypeName),
+  AssertArgumentError(TypeName),
 }
 
 struct TypeCheckingContext {
@@ -113,6 +114,13 @@ impl TypeCheckingContext {
         match self.evaluate_expression_type(expr)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::PrintArgumentError(TypeName::BoolType)),
+        }
+      },
+      &Statement::Read(ref name) => {
+        // Make sure the variable exists, and is either an int or string.
+        match self.evaluate_variable_type(name)? {
+          TypeName::IntType | TypeName::StringType => Ok(()),
+          TypeName::BoolType => Err(TypeError::ReadArgumentError(TypeName::BoolType))
         }
       },
       &Statement::Assert(ref expr) => {

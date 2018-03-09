@@ -120,3 +120,36 @@ pub fn assignment_non_existant_identifier() {
 
   assert_match!(result => Err(ExecutionError::TypeError(TypeError::UndeclaredIdentifier(_a))));
 }
+
+#[test]
+pub fn read_roundtrip_string() {
+  let source = r#"
+    var a : string;
+    read a;
+    print a;
+  "#;
+
+  let mut io = TestIo::new(&["Well this is neat."]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["Well this is neat."]);
+  assert_eq!(io.input.len(), 0, "Input was consumed.");
+}
+
+#[test]
+pub fn read_int_add() {
+  let source = r#"
+    var a : int;
+    read a;
+    a := a + 101;
+    print a;
+  "#;
+
+  let mut io = TestIo::new(&["22"]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["123"]);
+  assert_eq!(io.input.len(), 0, "Input was consumed.");
+}
