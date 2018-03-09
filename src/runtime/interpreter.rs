@@ -4,7 +4,7 @@ use common::types::Value;
 
 use parsing::ast::*;
 
-use interpreter::io::Io;
+use runtime::io::Io;
 
 pub struct Interpreter<T: Io> {
   variables: HashMap<String, Option<Value>>,
@@ -19,7 +19,7 @@ impl<T: Io> Interpreter<T> {
     }
   }
 
-  fn assign(&mut self, identifier: &String, value: Option<Value>) {
+  fn assign(&mut self, identifier: &str, value: Option<Value>) {
     self.variables.insert(identifier.to_string(), value);
   }
 
@@ -59,7 +59,7 @@ impl<T: Io> Interpreter<T> {
         ref initial,
         ..
       } => {
-        let initial_value = initial.as_ref().map(|expr| self.evaluate_expression(&expr));
+        let initial_value = initial.as_ref().map(|expr| self.evaluate_expression(expr));
         self.assign(name, initial_value);
       }
       Statement::Print(ref expr) => {
@@ -70,7 +70,7 @@ impl<T: Io> Interpreter<T> {
     }
   }
 
-  pub fn execute(&mut self, program: &Program) {
+  pub fn execute(&mut self, program: Program) {
     for statement in program {
       self.execute_statement(statement);
     }

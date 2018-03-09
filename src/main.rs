@@ -15,9 +15,9 @@ use parsing::parser::*;
 mod semantic;
 use semantic::type_checker::type_check;
 
-mod interpreter;
-use interpreter::{Interpreter};
-use interpreter::console_io::ConsoleIo;
+mod runtime;
+use runtime::{Interpreter};
+use runtime::console_io::ConsoleIo;
 
 fn read_file<P: AsRef<Path>>(path: P) -> Result<Vec<char>, std::io::Error> {
   let mut input_file = std::fs::File::open(path)?;

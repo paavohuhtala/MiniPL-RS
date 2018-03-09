@@ -32,10 +32,7 @@ impl Token {
 
 type ParseResult<T> = Result<T, ParserError>;
 
-impl<T> Parser<T>
-where
-  T: TokenSource,
-{
+impl<T: TokenSource> Parser<T> {
   pub fn new(lexer: T) -> Parser<T> {
     Parser { lexer }
   }

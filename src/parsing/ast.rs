@@ -25,4 +25,4 @@ pub enum Statement {
   Assert,
 }
 
-pub type Program = Vec<Statement>;
+pub type Program<'a> = &'a[Statement];
