@@ -11,7 +11,7 @@ Consists of the following components:
 * A recursive descent parser which _should_ parse everything without backtracking.
   * Utilises a modified [shunting yard algorithm](https://en.wikipedia.org/wiki/Shunting-yard_algorithm) for expression parsing.
 * A type checker. Since the language doesn't support functions or structs and has only 3 built-in types it's rather simple.
-* An AST interpreter, which doesn't exist yet.
+* An AST interpreter.
 
 # License
 
