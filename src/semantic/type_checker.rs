@@ -17,6 +17,7 @@ pub enum TypeError {
     was: TypeName,
   },
   PrintArgumentError(TypeName),
+  AssertArgumentError(TypeName)
 }
 
 struct TypeCheckingContext {
@@ -100,6 +101,12 @@ impl TypeCheckingContext {
         match self.evaluate_expression_type(expr)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::PrintArgumentError(TypeName::BoolType)),
+        }
+      },
+      &Statement::Assert(ref expr) => {
+        match self.evaluate_expression_type(expr)? {
+          TypeName::BoolType => Ok(()),
+          other => Err(TypeError::AssertArgumentError(other))
         }
       }
       other => panic!("Unsupported statement: {:?}", other),

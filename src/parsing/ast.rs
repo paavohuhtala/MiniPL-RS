@@ -26,7 +26,7 @@ pub enum Statement {
   For,
   Read,
   Print(Expression),
-  Assert,
+  Assert(Expression),
 }
 
-pub type Program<'a> = &'a[Statement];
+pub type Program<'a> = &'a [Statement];

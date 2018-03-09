@@ -194,11 +194,19 @@ impl<T: TokenSource> Parser<T> {
     }
   }
 
+  pub fn parse_assertion(&mut self) -> Result<Statement, ParserError> {
+    self.expect_eq(&Token::Assert)?;
+    let assertion = self.parse_expression()?;
+    self.expect_eq(&Token::Semicolon)?;
+    Ok(Statement::Assert(assertion))
+  }
+
   pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
     let first = self.lexer.peek()?;
     match first {
       Token::Print => self.parse_print_statement(),
       Token::Var => self.parse_decleration(),
+      Token::Assert => self.parse_assertion(),
       _ => Err(ParserError::MalformedStatement),
     }
   }

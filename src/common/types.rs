@@ -93,6 +93,7 @@ pub enum Token {
   Assign,
   Print,
   Var,
+  Assert,
   EndOfFile
 }
 
@@ -109,6 +110,7 @@ pub enum TokenKind {
   AssignK,
   PrintK,
   VarK,
+  AssertK,
   EndOfFileK
 }
 
@@ -126,6 +128,7 @@ impl Token {
       Token::Assign => TokenKind::AssignK,
       Token::Print => TokenKind::PrintK,
       Token::Var => TokenKind::VarK,
+      Token::Assert => TokenKind::AssertK,
       Token::EndOfFile => TokenKind::EndOfFileK
     }
   }

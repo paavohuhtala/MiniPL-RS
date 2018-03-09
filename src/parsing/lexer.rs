@@ -32,12 +32,15 @@ static RESERVED_WORDS: &'static [&str] = &["print", "int", "bool", "string"];
 
 fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerError> {
   let chars = input.take_until(|c| !is_valid_in_identifier(c));
+  // This is just string comparison, but because string != char sequence, we
+  // have to compare using slice patterns.
   match *chars {
     ['p', 'r', 'i', 'n', 't'] => Ok(Token::Print),
     ['i', 'n', 't'] => Ok(Token::Type(TypeName::IntType)),
     ['b', 'o', 'o', 'l'] => Ok(Token::Type(TypeName::BoolType)),
     ['s', 't', 'r', 'i', 'n', 'g'] => Ok(Token::Type(TypeName::StringType)),
     ['v', 'a', 'r'] => Ok(Token::Var),
+    ['a', 's', 's', 'e', 'r', 't'] => Ok(Token::Assert),
     _ => {
       let name: String = chars.iter().collect();
 

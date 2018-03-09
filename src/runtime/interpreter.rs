@@ -74,6 +74,14 @@ impl<T: Io> Interpreter<T> {
         let value = self.evaluate_expression(expr);
         self.io.write_line(&value.to_string());
       }
+      Statement::Assert(ref expr) => {
+        let value = self.evaluate_expression(expr);
+        match value {
+          Value::BoolV(true) => return,
+          Value::BoolV(false) => self.io.write_line(&format!("ASSERTION FAILED: {:?}", expr)),
+          _ => panic!("Type checker will prevent this."),
+        }
+      }
       _ => panic!(),
     }
   }
