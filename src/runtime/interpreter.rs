@@ -6,13 +6,13 @@ use parsing::ast::*;
 
 use runtime::io::Io;
 
-pub struct Interpreter<T: Io> {
+pub struct Interpreter<'a, T: Io + 'a> {
   variables: HashMap<String, Option<Value>>,
-  io: T,
+  io: &'a mut T,
 }
 
-impl<T: Io> Interpreter<T> {
-  pub fn new(io: T) -> Interpreter<T> {
+impl<'a, T: Io> Interpreter<'a, T> {
+  pub fn new(io: &'a mut T) -> Interpreter<'a, T> {
     Interpreter {
       io,
       variables: HashMap::new(),
