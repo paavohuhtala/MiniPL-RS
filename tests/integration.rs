@@ -1,8 +1,6 @@
 extern crate miniplrs;
 
 use miniplrs::runtime::Io;
-use miniplrs::parsing::char_stream::CharStream;
-
 use miniplrs::run_script;
 
 struct TestIo {
@@ -25,7 +23,7 @@ impl Io for TestIo {
   }
 
   fn read_line(&mut self) -> String {
-    self.output.remove(0)
+    self.input.remove(0)
   }
 }
 
@@ -50,6 +48,7 @@ pub fn run_hello_world() {
   let result = run_script(source, &mut io);
 
   assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["Hello, world!"]);
 }
 
 #[test]
@@ -73,4 +72,5 @@ pub fn run_hello_world_without_semicolon() {
       }
     )
   ));
+  assert_eq!(io.output.len(), 0);
 }
