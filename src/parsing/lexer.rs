@@ -94,7 +94,7 @@ fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
   let first = input.peek()?;
 
   let token = match first {
-    ';' | '+' | '-' | '*' | '/' | '<' | '=' | '&' | '!' => {
+    ';' | '(' | ')' | '+' | '-' | '*' | '/' | '<' | '=' | '&' | '!' => {
       input.advance();
       Ok(parse_single_char_token(first))
     }
@@ -110,7 +110,6 @@ fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
     }
     '0'...'9' => read_number_literal(input),
     '"' => read_string_literal(input),
-    // TODO: handle expressions
     _ => read_keyword_or_identifier(input),
   };
 

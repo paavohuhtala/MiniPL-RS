@@ -28,6 +28,7 @@ pub enum ParserError {
   MalformedStatement,
   UnexpectedToken { expected: TokenKind, was: TokenKind },
   LexerError(LexerError),
+  MissingRParen
 }
 
 impl From<Error> for LexerError {

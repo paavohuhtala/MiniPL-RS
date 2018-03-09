@@ -1,5 +1,6 @@
 use common::types::*;
 use common::errors::*;
+use common::util::VecExt;
 
 use parsing::ast::*;
 use parsing::token_source::TokenSource;
@@ -106,8 +107,14 @@ impl<T: TokenSource> Parser<T> {
 
   // Parses expressions using a modified version of the shunting yard algorithm.
   pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+    #[derive(PartialEq)]
+    enum OpStackItem {
+      Operator(Operator),
+      LParen,
+    }
+
     let mut output: Vec<Expression> = Vec::new();
-    let mut operators: Vec<Operator> = Vec::new();
+    let mut operators: Vec<OpStackItem> = Vec::new();
 
     // We don't need to access this from outside, so this function can be local.
     fn create_node(operator: Operator, output: &mut Vec<Expression>) {
@@ -145,44 +152,69 @@ impl<T: TokenSource> Parser<T> {
           self.advance()?;
           output.push(Expression::Variable(identifier));
         }
+        Token::LParen => {
+          self.advance()?;
+          operators.push(OpStackItem::LParen);
+        }
+        Token::RParen => {
+          self.advance()?;
+          operators.pop_while(|op_op_lparen| {
+            match **op_op_lparen {
+              OpStackItem::Operator(op) => {
+                create_node(op, &mut output);
+                true
+              }
+              OpStackItem::LParen => {
+                // We return false (even though we are going to pop this later) in order
+                // to stop the iteration.
+                false
+              }
+            }
+          });
+
+          // Pop the left parenthesis.
+          operators.pop();
+        }
         // When an operator is encountered, we need to make sure operator precedence holds.
         // This means that if previously added operator(s) have highers precedence, we must
         // handle them before adding this to the operator stack.
         Token::Operator(op) => {
           self.advance()?;
 
-          // To get around lifetime limitations, we'll do this in two parts:
-
-          let mut indices_to_pop = 0;
-
-          // 1. Iterate from back to front.
-          for op_to_pop in operators.iter().rev() {
-            // If we encounter an operator with lower or equal precedence, stop.
-            if op_to_pop.get_precedence() <= op.get_precedence() {
-              break;
+          // Go through the operator stack, and while there are operators with higher precedence
+          // pop them from the stack and add them to the AST.
+          // The closure parameter is a predicate with side effects - normally that could be
+          // an issue, but since the iterator is consumed immediately it should be fine.
+          operators.pop_while(|op_op_lparen| {
+            match **op_op_lparen {
+              OpStackItem::LParen => false,
+              OpStackItem::Operator(stack_op) => {
+                // When we encounter an operator with lower or equal precedence, stop.
+                if stack_op.get_precedence() <= op.get_precedence() {
+                  false
+                } else {
+                  // Mark this operator to be popped, and create the AST node for it.
+                  create_node(stack_op, &mut output);
+                  true
+                }
+              }
             }
-
-            // Mark this operator to be popped, and create the AST node for it.
-            indices_to_pop += 1;
-            create_node(*op_to_pop, &mut output);
-          }
-
-          // 2. Drop `indices_to_pop` entries, from back to front.
-          if indices_to_pop > 0 {
-            let operators_length = operators.len();
-            operators.drain(operators_length - indices_to_pop..operators_length);
-            assert_eq!(operators_length - indices_to_pop, operators.len());
-          }
+          });
 
           // Finally, push the operator to the stack.
-          operators.push(op);
+          operators.push(OpStackItem::Operator(op));
         }
         _ => break,
       }
     }
 
-    for operator in operators.iter().rev() {
-      create_node(*operator, &mut output);
+    for op_or_lparen in operators.iter().rev() {
+      match *op_or_lparen {
+        OpStackItem::LParen => return Err(ParserError::MissingRParen),
+        OpStackItem::Operator(op) => {
+          create_node(op, &mut output);
+        }
+      }
     }
 
     println!("Expression: {:?}", output);

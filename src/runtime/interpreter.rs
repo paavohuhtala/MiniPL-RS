@@ -51,6 +51,14 @@ impl<T: Io> Interpreter<T> {
           _ => panic!("Type checker will prevent this."),
         }
       }
+      Expression::Mul(ref params) => {
+        let (left, right) = self.evaluate_binary_expression(params);
+
+        match (left, right) {
+          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a * b),
+          _ => panic!("Type checker will prevent this."),
+        }
+      }
       Expression::Equal(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left == right)
