@@ -122,6 +122,7 @@ impl<T: TokenSource> Parser<T> {
             Operator::Sub => Expression::Sub(args),
             Operator::Mul => Expression::Mul(args),
             Operator::Div => Expression::Div(args),
+            Operator::Equal => Expression::Equal(args),
             _ => panic!("Not implemented yet."),
           }
         }

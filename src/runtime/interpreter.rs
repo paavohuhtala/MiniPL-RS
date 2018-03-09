@@ -23,6 +23,12 @@ impl<T: Io> Interpreter<T> {
     self.variables.insert(identifier.to_string(), value);
   }
 
+  fn evaluate_binary_expression(&self, params: &(Expression, Expression)) -> (Value, Value) {
+    let left = self.evaluate_expression(&params.0);
+    let right = self.evaluate_expression(&params.1);
+    (left, right)
+  }
+
   fn evaluate_expression(&self, expression: &Expression) -> Value {
     match *expression {
       // Into casts the literal value into a runtime value
@@ -37,15 +43,17 @@ impl<T: Io> Interpreter<T> {
           .expect("Type checker will prevent the use of uninitialised variables.")
       }
       Expression::Add(ref params) => {
-        // Params are boxed, so we need to destructure in here.
-        let left = self.evaluate_expression(&params.0);
-        let right = self.evaluate_expression(&params.1);
+        let (left, right) = self.evaluate_binary_expression(params);
 
         match (left, right) {
           (Value::IntV(a), Value::IntV(b)) => Value::IntV(a + b),
           (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
           _ => panic!("Type checker will prevent this."),
         }
+      }
+      Expression::Equal(ref params) => {
+        let (left, right) = self.evaluate_binary_expression(params);
+        Value::BoolV(left == right)
       }
       ref _other => panic!("Not supported."),
     }
