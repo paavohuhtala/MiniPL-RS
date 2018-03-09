@@ -103,6 +103,19 @@ impl<T: TokenSource> Parser<T> {
     })
   }
 
+  fn parse_assignment(&mut self) -> Result<Statement, ParserError> {
+    let identifier = self.lexer.peek()?.expect_identifier()?;
+    self.advance()?;
+
+    self.expect_eq(&Token::Assign)?;
+
+    let value = self.parse_expression()?;
+    
+    self.expect_eq(&Token::Semicolon)?;
+
+    Ok(Statement::Assign(identifier, value))
+  }
+
   // Parses expressions using a modified version of the shunting yard algorithm.
   pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
     #[derive(PartialEq)]
@@ -243,6 +256,7 @@ impl<T: TokenSource> Parser<T> {
       Token::Print => self.parse_print_statement(),
       Token::Var => self.parse_decleration(),
       Token::Assert => self.parse_assertion(),
+      Token::Identifier(_) => self.parse_assignment(),
       _ => Err(ParserError::MalformedStatement),
     }
   }

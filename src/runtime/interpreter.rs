@@ -84,6 +84,10 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let initial_value = initial.as_ref().map(|expr| self.evaluate_expression(expr));
         self.assign(name, initial_value);
       }
+      Statement::Assign(ref name, ref value) => {
+        let value = self.evaluate_expression(value);
+        self.assign(name, Some(value));
+      }
       Statement::Print(ref expr) => {
         let value = self.evaluate_expression(expr);
         self.io.write_line(&value.to_string());

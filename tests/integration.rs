@@ -38,6 +38,11 @@ macro_rules! assert_match {
   }
 }
 
+use miniplrs::ExecutionError;
+use miniplrs::common::errors::*;
+use miniplrs::common::types::*;
+use miniplrs::semantic::type_checker::TypeError;
+
 #[test]
 pub fn run_hello_world() {
   let source = r#"
@@ -53,10 +58,6 @@ pub fn run_hello_world() {
 
 #[test]
 pub fn run_hello_world_without_semicolon() {
-  use miniplrs::ExecutionError;
-  use miniplrs::common::errors::*;
-  use miniplrs::common::types::*;
-
   let source = r#"
     print "Hello, world!"
   "#;
@@ -89,4 +90,33 @@ pub fn bool_operators() {
 
   assert_match!(result => Ok(()));
   assert_eq!(io.output.len(), 0);
+}
+
+#[test]
+pub fn assignment_valid() {
+  let source = r#"
+    var a : int := 10;
+    print a;
+    a := 20;
+    print a;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["10", "20"]);
+}
+
+#[test]
+pub fn assignment_non_existant_identifier() {
+  let source = r#"
+    a := 10;
+    print a;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Err(ExecutionError::TypeError(TypeError::UndeclaredIdentifier(_a))));
 }

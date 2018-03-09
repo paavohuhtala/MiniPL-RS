@@ -42,17 +42,19 @@ impl TypeCheckingContext {
     Ok((left, right))
   }
 
+  fn evaluate_variable_type(&self, variable: &str) -> Result<TypeName, TypeError> {
+    if let Some(symbol_type) = self.symbols.get(variable) {
+      Ok(*symbol_type)
+    } else {
+      Err(TypeError::UndeclaredIdentifier(variable.to_string()))
+    }
+  }
+
   fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
     use self::Expression::*;
     match *expression {
       Literal(ref literal) => Ok(self.get_literal_type(literal)),
-      Variable(ref variable) => {
-        if let Some(symbol_type) = self.symbols.get(variable) {
-          Ok(*symbol_type)
-        } else {
-          Err(TypeError::UndeclaredIdentifier(variable.to_string()))
-        }
-      }
+      Variable(ref variable) => self.evaluate_variable_type(variable),
       Add(ref param_box) | Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
         Self::assert_types_equal(left, right)?;
@@ -100,6 +102,11 @@ impl TypeCheckingContext {
         // Add the symbol to the symbol table.
         self.symbols.insert(name.to_string(), *type_of);
         Ok(())
+      }
+      &Statement::Assign(ref name, ref value) => {
+        let variable_type = self.evaluate_variable_type(name)?;
+        let value_type = self.evaluate_expression_type(value)?;
+        Self::assert_types_equal(variable_type, value_type)
       }
       &Statement::Print(ref expr) => {
         // Only strings and ints can be printed.

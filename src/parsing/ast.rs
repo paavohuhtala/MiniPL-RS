@@ -23,7 +23,7 @@ pub enum Statement {
     type_of: TypeName,
     initial: Option<Expression>,
   },
-  Assign,
+  Assign(String, Expression),
   For,
   Read,
   Print(Expression),
