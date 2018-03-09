@@ -63,6 +63,12 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left == right)
       }
+      Expression::Not(ref param) => {
+        match self.evaluate_expression(param) {
+          Value::BoolV(b) => Value::BoolV(!b),
+          _ => panic!("Type checker will prevent this.")
+        }
+      }
       ref _other => panic!("Not supported."),
     }
   }

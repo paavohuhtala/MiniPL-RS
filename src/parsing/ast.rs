@@ -13,6 +13,7 @@ pub enum Expression {
   Mul(BinaryExpr),
   Div(BinaryExpr),
   Equal(BinaryExpr),
+  Not(Box<Expression>)
 }
 
 #[derive(Debug)]

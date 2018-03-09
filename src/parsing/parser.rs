@@ -131,7 +131,13 @@ impl<T: TokenSource> Parser<T> {
             _ => panic!("Not implemented yet."),
           }
         }
-        Arity::Unary => panic!("Not implemented yet."),
+        Arity::Unary => {
+          let inner = output.pop().unwrap();
+          match operator {
+            Operator::Not => Expression::Not(Box::new(inner)),
+            _ => panic!("There are no other unary operators.")
+          } 
+        }
       };
 
       output.push(node);

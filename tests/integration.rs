@@ -74,3 +74,19 @@ pub fn run_hello_world_without_semicolon() {
   ));
   assert_eq!(io.output.len(), 0);
 }
+
+#[test]
+pub fn bool_operators() {
+  let source = r#"
+    var a : int := 10;
+    var b : int := 20;
+    var c : bool := !(a = b) = !(b = a);
+    assert c;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output.len(), 0);
+}
