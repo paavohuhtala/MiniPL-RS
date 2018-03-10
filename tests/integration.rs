@@ -244,3 +244,17 @@ pub fn logic_operators_mix() {
   let result = run_script(source, &mut io);
   assert_match!(result => Ok(()));
 }
+
+#[test]
+pub fn loop_variable_mutability() {
+  let source = r#"
+    var i : int;
+    for i in 0 .. 10 do
+      i := 100;
+    end for; 
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Err(ExecutionError::TypeError(TypeError::AssignToImmutable(_i))));
+}

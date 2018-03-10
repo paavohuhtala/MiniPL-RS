@@ -57,31 +57,23 @@ impl<'a, T: Io> Interpreter<'a, T> {
           .expect("Type checker will prevent the use of uninitialised variables.")
           .clone()
       }
-      Expression::Add(ref params) => {
-        match self.evaluate_binary_expression(params) {
-          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a + b),
-          (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
-          _ => panic!("Type checker will prevent this."),
-        }
+      Expression::Add(ref params) => match self.evaluate_binary_expression(params) {
+        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a + b),
+        (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
+        _ => panic!("Type checker will prevent this."),
       },
-      Expression::Sub(ref params) => {
-        match self.evaluate_binary_expression(params) {
-          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a - b),
-          _ => panic!("Type checker will prevent this."),
-        }
-      }
-      Expression::Mul(ref params) => {
-        match self.evaluate_binary_expression(params) {
-          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a * b),
-          _ => panic!("Type checker will prevent this."),
-        }
-      }
-      Expression::Div(ref params) => {
-        match self.evaluate_binary_expression(params) {
-          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a / b),
-          _ => panic!("Type checker will prevent this."),
-        }
-      }
+      Expression::Sub(ref params) => match self.evaluate_binary_expression(params) {
+        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a - b),
+        _ => panic!("Type checker will prevent this."),
+      },
+      Expression::Mul(ref params) => match self.evaluate_binary_expression(params) {
+        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a * b),
+        _ => panic!("Type checker will prevent this."),
+      },
+      Expression::Div(ref params) => match self.evaluate_binary_expression(params) {
+        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a / b),
+        _ => panic!("Type checker will prevent this."),
+      },
       Expression::Equal(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left == right)
@@ -90,16 +82,14 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left < right)
       }
-      Expression::And(ref params) => {
-        match self.evaluate_binary_expression(params) {
-          (Value::BoolV(a), Value::BoolV(b)) => Value::BoolV(a && b),
-          _ => panic!("Type checker will prevent this.")          
-        }
-      }
+      Expression::And(ref params) => match self.evaluate_binary_expression(params) {
+        (Value::BoolV(a), Value::BoolV(b)) => Value::BoolV(a && b),
+        _ => panic!("Type checker will prevent this."),
+      },
       Expression::Not(ref param) => match self.evaluate_expression(param) {
         Value::BoolV(b) => Value::BoolV(!b),
         _ => panic!("Type checker will prevent this."),
-      }
+      },
     }
   }
 
@@ -150,23 +140,27 @@ impl<'a, T: Io> Interpreter<'a, T> {
           Value::BoolV(false) => self.io.write_line(&format!("ASSERTION FAILED: {:?}", expr)),
           _ => panic!("Type checker will prevent this."),
         }
-      },
-      Statement::For { ref variable, ref from, ref to, ref run } => {
+      }
+      Statement::For {
+        ref variable,
+        ref from,
+        ref to,
+        ref run,
+      } => {
         let from_value = self.evaluate_expression(from);
         let to_value = self.evaluate_expression(to);
 
         match (from_value, to_value) {
           (Value::IntV(from), Value::IntV(to)) => {
-            for i in from .. (to + 1) {
-              // TODO: Mark variable as immutable.
+            for i in from..(to + 1) {
               self.assign(variable, Value::IntV(i));
 
               for statement in run {
                 self.execute_statement(statement);
               }
             }
-          },
-          _ => panic!("Type checker will prevent this")
+          }
+          _ => panic!("Type checker will prevent this"),
         }
       }
     }

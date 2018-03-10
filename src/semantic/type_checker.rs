@@ -19,10 +19,16 @@ pub enum TypeError {
   PrintArgumentError(TypeName),
   ReadArgumentError(TypeName),
   AssertArgumentError(TypeName),
+  AssignToImmutable(String),
+}
+
+struct Symbol {
+  type_of: TypeName,
+  is_mutable: bool,
 }
 
 struct TypeCheckingContext {
-  symbols: HashMap<String, TypeName>,
+  symbols: HashMap<String, Symbol>,
 }
 
 impl TypeCheckingContext {
@@ -44,8 +50,8 @@ impl TypeCheckingContext {
   }
 
   fn evaluate_variable_type(&self, variable: &str) -> Result<TypeName, TypeError> {
-    if let Some(symbol_type) = self.symbols.get(variable) {
-      Ok(*symbol_type)
+    if let Some(symbol) = self.symbols.get(variable) {
+      Ok(symbol.type_of)
     } else {
       Err(TypeError::UndeclaredIdentifier(variable.to_string()))
     }
@@ -60,18 +66,18 @@ impl TypeCheckingContext {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
         Self::assert_types_equal(left, right)?;
         Ok(left)
-      },
+      }
       Equal(ref param_box) | LessThan(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
         Self::assert_types_equal(left, right)?;
         Ok(TypeName::BoolType)
-      },
+      }
       And(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
         Self::assert_types_equal(TypeName::BoolType, left)?;
         Self::assert_types_equal(TypeName::BoolType, right)?;
         Ok(TypeName::BoolType)
-      },
+      }
       Not(ref param_box) => {
         let inner = self.evaluate_expression_type(param_box)?;
         Self::assert_types_equal(TypeName::BoolType, inner)?;
@@ -85,6 +91,23 @@ impl TypeCheckingContext {
       Err(TypeError::IncompatibleTypes { expected, was: is })
     } else {
       Ok(())
+    }
+  }
+
+  fn set_variable_mutability(&mut self, name: &str, is_mutable: bool) {
+    let symbol = self
+      .symbols
+      .get_mut(name)
+      .expect("Symbol should always be defined at this point.");
+    symbol.is_mutable = is_mutable;
+  }
+
+  fn assert_mutable(&self, name: &str) -> Result<(), TypeError> {
+    let symbol = self.symbols.get(name).expect("Symbol should always be defined at this point");
+    if !symbol.is_mutable {
+      Err(TypeError::AssignToImmutable(name.to_string()))
+    } else {
+      Ok(())      
     }
   }
 
@@ -107,13 +130,20 @@ impl TypeCheckingContext {
         }
 
         // Add the symbol to the symbol table.
-        self.symbols.insert(name.to_string(), *type_of);
+        self.symbols.insert(
+          name.to_string(),
+          Symbol {
+            type_of: *type_of,
+            is_mutable: true,
+          },
+        );
         Ok(())
       }
       &Statement::Assign(ref name, ref value) => {
         let variable_type = self.evaluate_variable_type(name)?;
         let value_type = self.evaluate_expression_type(value)?;
-        Self::assert_types_equal(variable_type, value_type)
+        Self::assert_types_equal(variable_type, value_type)?;
+        self.assert_mutable(name)
       }
       &Statement::Print(ref expr) => {
         // Only strings and ints can be printed.
@@ -121,28 +151,38 @@ impl TypeCheckingContext {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::PrintArgumentError(TypeName::BoolType)),
         }
-      },
+      }
       &Statement::Read(ref name) => {
         // Make sure the variable exists, and is either an int or string.
         match self.evaluate_variable_type(name)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
-          TypeName::BoolType => Err(TypeError::ReadArgumentError(TypeName::BoolType))
+          TypeName::BoolType => Err(TypeError::ReadArgumentError(TypeName::BoolType)),
         }
+      }
+      &Statement::Assert(ref expr) => match self.evaluate_expression_type(expr)? {
+        TypeName::BoolType => Ok(()),
+        other => Err(TypeError::AssertArgumentError(other)),
       },
-      &Statement::Assert(ref expr) => {
-        match self.evaluate_expression_type(expr)? {
-          TypeName::BoolType => Ok(()),
-          other => Err(TypeError::AssertArgumentError(other))
-        }
-      },
-      &Statement::For { ref variable, ref from, ref to, ref run } => {
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_variable_type(&variable)?)?;
+      &Statement::For {
+        ref variable,
+        ref from,
+        ref to,
+        ref run,
+      } => {
+        // Loop variable must be a mutable integer
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_variable_type(variable)?)?;
+        self.assert_mutable(variable)?;
+
         Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&from)?)?;
         Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&to)?)?;
-        
+
+        self.set_variable_mutability(variable, false);
+
         for statement in run {
           self.type_check_statement(statement)?;
         }
+
+        self.set_variable_mutability(variable, true);
 
         Ok(())
       }
