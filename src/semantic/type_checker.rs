@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use common::types::*;
 use parsing::ast::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TypeError {
   RedeclaredIdentifier(String),
   UndeclaredIdentifier(String),
@@ -16,6 +16,7 @@ pub enum TypeError {
     expected: TypeName,
     was: TypeName,
   },
+  AddTypeError(TypeName, TypeName),
   PrintArgumentError(TypeName),
   ReadArgumentError(TypeName),
   AssertArgumentError(TypeName),
@@ -62,9 +63,18 @@ impl TypeCheckingContext {
     match *expression {
       Literal(ref literal) => Ok(self.get_literal_type(literal)),
       Variable(ref variable) => self.evaluate_variable_type(variable),
-      Add(ref param_box) | Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
+      Add(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
-        Self::assert_types_equal(left, right)?;
+        match (left, right) {
+          (TypeName::IntType, TypeName::IntType) => Ok(TypeName::IntType),
+          (TypeName::StringType, TypeName::StringType) => Ok(TypeName::StringType),
+          (a, b) => Err(TypeError::AddTypeError(a, b))
+        }
+      }
+      Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
+        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
+        Self::assert_types_equal(TypeName::IntType, left)?;
+        Self::assert_types_equal(TypeName::IntType, right)?;
         Ok(left)
       }
       Equal(ref param_box) | LessThan(ref param_box) => {
@@ -103,11 +113,14 @@ impl TypeCheckingContext {
   }
 
   fn assert_mutable(&self, name: &str) -> Result<(), TypeError> {
-    let symbol = self.symbols.get(name).expect("Symbol should always be defined at this point");
+    let symbol = self
+      .symbols
+      .get(name)
+      .expect("Symbol should always be defined at this point");
     if !symbol.is_mutable {
       Err(TypeError::AssignToImmutable(name.to_string()))
     } else {
-      Ok(())      
+      Ok(())
     }
   }
 
@@ -200,4 +213,68 @@ pub fn type_check(program: &[Statement]) -> Result<(), TypeError> {
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+#[macro_use]
+mod tests {
+  use super::*;
+  use common::types::TypeName::*;
+  use semantic::test_util::*;
+
+  fn ctx() -> TypeCheckingContext {
+    TypeCheckingContext {
+      symbols: HashMap::new(),
+    }
+  }
+
+  macro_rules! type_shorthand {
+    (int) => (TypeName::IntType);
+    (boolean) => (TypeName::BoolType);
+    (string) => (TypeName::StringType);
+  }
+
+  macro_rules! operator_tests {
+    { 
+      $op: ident { $(($a_ok: ident, $b_ok: ident) -> $res: ident),* }
+    } => {
+      let ctx = ctx();
+
+      for a in &[IntType, StringType, BoolType] {
+        for b in &[IntType, StringType, BoolType] {
+          let result = ctx.evaluate_expression_type(&$op(expr_of_type(*a), expr_of_type(*b)));
+          $(
+            if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
+              assert_eq!(
+                Ok(type_shorthand!($res)),
+                result,
+                stringify!(($a_ok, $b_ok) -> $res)
+              );
+              continue;
+            }
+          )*;
+          assert_match!(result => Err(_), "Should fail with types ({:?}, {:?}).", a, b);
+        }
+      }
+    };
+  }
+
+  #[test]
+  fn add_operator() {
+    operator_tests! {
+      add {
+        (int, int) -> int,
+        (string, string) -> string
+      }
+    }
+  }
+
+  #[test]
+  fn sub_operator() {
+    operator_tests! {
+      sub {
+        (int, int) -> int
+      }
+    }
+  }
 }

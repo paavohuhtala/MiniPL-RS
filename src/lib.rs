@@ -1,5 +1,6 @@
 #![feature(slice_patterns)]
 
+#[macro_use]
 pub mod common;
 pub mod parsing;
 pub mod semantic;
