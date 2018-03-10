@@ -61,7 +61,7 @@ impl TypeCheckingContext {
         Self::assert_types_equal(left, right)?;
         Ok(left)
       },
-      Equal(ref param_box) => {
+      Equal(ref param_box) | LessThan(ref param_box) => {
         let (left, right) = self.evaluate_binary_expression_type(param_box)?;
         Self::assert_types_equal(left, right)?;
         Ok(TypeName::BoolType)
@@ -140,7 +140,6 @@ impl TypeCheckingContext {
 
         Ok(())
       }
-      other => panic!("Unsupported statement: {:?}", other),
     }
   }
 }

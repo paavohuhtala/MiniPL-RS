@@ -145,8 +145,8 @@ impl<T: TokenSource> Parser<T> {
     fn create_node(operator: Operator, output: &mut Vec<Expression>) {
       let node = match operator.get_arity() {
         Arity::Binary => {
-          let left = output.pop().unwrap();
           let right = output.pop().unwrap();
+          let left = output.pop().unwrap();
           let args = Box::new((left, right));
 
           match operator {
@@ -155,6 +155,7 @@ impl<T: TokenSource> Parser<T> {
             Operator::Mul => Expression::Mul(args),
             Operator::Div => Expression::Div(args),
             Operator::Equal => Expression::Equal(args),
+            Operator::LessThan => Expression::LessThan(args),
             _ => panic!("Not implemented yet."),
           }
         }

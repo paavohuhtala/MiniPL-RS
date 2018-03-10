@@ -188,3 +188,46 @@ pub fn for_nested() {
   assert_match!(result => Ok(()));
   assert_eq!(io.output, vec!["1", "2", "3", "2", "4", "6", "3", "6", "9"]);
 }
+
+#[test]
+pub fn arithmetic_sub_order() {
+  let source = r#"
+    var x : int := 3;
+    var y : int := 5;
+    print x - y;
+    print y - x;
+    print x - x;
+    print y - y;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["-2", "2", "0", "0"]);
+}
+
+#[test]
+pub fn arithmetic_div_uses_truncation() {
+  let source = r#"
+    print 10 / 2;
+    print 10 / 3;
+    print 100 / 101;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["5", "3", "0"]);
+}
+
+#[test]
+pub fn string_comparison() {
+  let source = r#"
+    assert "aaa" < "bbb";
+    assert !("bbb" < "aaa");
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+}

@@ -14,7 +14,7 @@ pub enum LiteralValue {
   IntLiteral(i32),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 /// These values exist at runtime.
 pub enum Value {
   IntV(i32),

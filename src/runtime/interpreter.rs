@@ -65,6 +65,13 @@ impl<'a, T: Io> Interpreter<'a, T> {
           (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
           _ => panic!("Type checker will prevent this."),
         }
+      },
+      Expression::Sub(ref params) => {
+        let (left, right) = self.evaluate_binary_expression(params);
+        match (left, right) {
+          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a - b),
+          _ => panic!("Type checker will prevent this."),
+        }
       }
       Expression::Mul(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
@@ -74,15 +81,26 @@ impl<'a, T: Io> Interpreter<'a, T> {
           _ => panic!("Type checker will prevent this."),
         }
       }
+      Expression::Div(ref params) => {
+        let (left, right) = self.evaluate_binary_expression(params);
+
+        match (left, right) {
+          (Value::IntV(a), Value::IntV(b)) => Value::IntV(a / b),
+          _ => panic!("Type checker will prevent this."),
+        }
+      }
       Expression::Equal(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left == right)
       }
+      Expression::LessThan(ref params) => {
+        let (left, right) = self.evaluate_binary_expression(params);
+        Value::BoolV(left < right)
+      }
       Expression::Not(ref param) => match self.evaluate_expression(param) {
         Value::BoolV(b) => Value::BoolV(!b),
         _ => panic!("Type checker will prevent this."),
-      },
-      ref _other => panic!("Not supported."),
+      }
     }
   }
 
@@ -151,8 +169,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
           },
           _ => panic!("Type checker will prevent this")
         }
-      },
-      _ => panic!(),
+      }
     }
   }
 
