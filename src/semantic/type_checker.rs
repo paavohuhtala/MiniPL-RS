@@ -128,6 +128,17 @@ impl TypeCheckingContext {
           TypeName::BoolType => Ok(()),
           other => Err(TypeError::AssertArgumentError(other))
         }
+      },
+      &Statement::For { ref variable, ref from, ref to, ref run } => {
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_variable_type(&variable)?)?;
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&from)?)?;
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&to)?)?;
+        
+        for statement in run {
+          self.type_check_statement(statement)?;
+        }
+
+        Ok(())
       }
       other => panic!("Unsupported statement: {:?}", other),
     }

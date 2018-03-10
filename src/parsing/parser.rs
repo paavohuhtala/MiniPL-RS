@@ -69,7 +69,7 @@ impl<T: TokenSource> Parser<T> {
 
   fn parse_print_statement(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Print)?;
-    
+
     let value = self.parse_expression()?;
 
     self.expect_eq(&Token::Semicolon)?;
@@ -162,8 +162,8 @@ impl<T: TokenSource> Parser<T> {
           let inner = output.pop().unwrap();
           match operator {
             Operator::Not => Expression::Not(Box::new(inner)),
-            _ => panic!("There are no other unary operators.")
-          } 
+            _ => panic!("There are no other unary operators."),
+          }
         }
       };
 
@@ -264,6 +264,36 @@ impl<T: TokenSource> Parser<T> {
     Ok(Statement::Assert(assertion))
   }
 
+  pub fn parse_for(&mut self) -> Result<Statement, ParserError> {
+    self.expect_eq(&Token::For)?;
+
+    let variable = self.lexer.peek()?.expect_identifier()?;
+    self.advance()?;
+
+    self.expect_eq(&Token::In)?;
+
+    let from = self.parse_expression()?;
+
+    self.expect_eq(&Token::Range)?;
+
+    let to = self.parse_expression()?;
+
+    self.expect_eq(&Token::Do)?;
+
+    let run = self.parse_statement_list()?;
+
+    self.expect_eq(&Token::End)?;
+    self.expect_eq(&Token::For)?;
+    self.expect_eq(&Token::Semicolon)?;
+
+    Ok(Statement::For {
+      variable,
+      from,
+      to,
+      run,
+    })
+  }
+
   pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
     let first = self.lexer.peek()?;
     match first {
@@ -272,6 +302,7 @@ impl<T: TokenSource> Parser<T> {
       Token::Var => self.parse_decleration(),
       Token::Assert => self.parse_assertion(),
       Token::Identifier(_) => self.parse_assignment(),
+      Token::For => self.parse_for(),
       _ => Err(ParserError::MalformedStatement),
     }
   }
@@ -280,8 +311,9 @@ impl<T: TokenSource> Parser<T> {
     let mut statements = Vec::new();
 
     loop {
-      // If we reached end of file, stop parsing.
-      if self.lexer.peek()? == Token::EndOfFile {
+      let next = self.lexer.peek()?;
+      // If we reached end of file OR the end keyword, stop parsing.
+      if next == Token::EndOfFile || next == Token::End {
         break;
       }
 
@@ -296,8 +328,12 @@ impl<T: TokenSource> Parser<T> {
       }
     }
 
-    self.expect_eq(&Token::EndOfFile)?;
-
     Ok(statements)
+  }
+
+  pub fn parse_program(&mut self) -> Result<Vec<Statement>, ParserError> {
+    let program = self.parse_statement_list()?;
+    self.expect_eq(&Token::EndOfFile)?;
+    Ok(program)
   }
 }

@@ -13,7 +13,7 @@ pub enum Expression {
   Mul(BinaryExpr),
   Div(BinaryExpr),
   Equal(BinaryExpr),
-  Not(Box<Expression>)
+  Not(Box<Expression>),
 }
 
 #[derive(Debug)]
@@ -24,7 +24,12 @@ pub enum Statement {
     initial: Option<Expression>,
   },
   Assign(String, Expression),
-  For,
+  For {
+    variable: String,
+    from: Expression,
+    to: Expression,
+    run: Vec<Statement>,
+  },
   Print(Expression),
   Read(String),
   Assert(Expression),

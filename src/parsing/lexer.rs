@@ -42,6 +42,10 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
     ['s', 't', 'r', 'i', 'n', 'g'] => Ok(Token::Type(TypeName::StringType)),
     ['v', 'a', 'r'] => Ok(Token::Var),
     ['a', 's', 's', 'e', 'r', 't'] => Ok(Token::Assert),
+    ['f', 'o', 'r'] => Ok(Token::For),
+    ['i', 'n'] => Ok(Token::In),
+    ['d', 'o'] => Ok(Token::Do),
+    ['e', 'n', 'd'] => Ok(Token::End),
     _ => {
       let name: String = chars.iter().collect();
 
@@ -107,6 +111,15 @@ fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
         Ok(Token::Assign)
       } else {
         Ok(Token::Colon)
+      }
+    },
+    '.' => {
+      input.advance();
+      if input.peek()? == '.' {
+        input.advance();
+        Ok(Token::Range)
+      } else {
+        Err(LexerError::UnknownLexeme)
       }
     }
     '0'...'9' => read_number_literal(input),
@@ -194,9 +207,6 @@ mod tests {
   #[test]
   pub fn basic_lookahead() {
     let tokens = lex(": = :=");
-    assert_eq!(
-      tokens,
-      [Colon, equal_op(), Assign]
-    );
+    assert_eq!(tokens, [Colon, equal_op(), Assign]);
   }
 }

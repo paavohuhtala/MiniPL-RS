@@ -27,7 +27,7 @@ impl Value {
     match *self {
       Value::IntV(_) => TypeName::IntType,
       Value::StringV(_) => TypeName::StringType,
-      Value::BoolV(_) => TypeName::BoolType
+      Value::BoolV(_) => TypeName::BoolType,
     }
   }
 }
@@ -105,6 +105,11 @@ pub enum Token {
   Read,
   Var,
   Assert,
+  For,
+  In,
+  Range,
+  Do,
+  End,
   EndOfFile,
 }
 
@@ -123,6 +128,11 @@ pub enum TokenKind {
   ReadK,
   VarK,
   AssertK,
+  ForK,
+  InK,
+  RangeK,
+  DoK,
+  EndK,
   EndOfFileK,
 }
 
@@ -142,6 +152,11 @@ impl Token {
       Token::Read => TokenKind::ReadK,
       Token::Var => TokenKind::VarK,
       Token::Assert => TokenKind::AssertK,
+      Token::For => TokenKind::ForK,
+      Token::In => TokenKind::InK,
+      Token::Range => TokenKind::RangeK,
+      Token::Do => TokenKind::DoK,
+      Token::End => TokenKind::EndK,
       Token::EndOfFile => TokenKind::EndOfFileK,
     }
   }

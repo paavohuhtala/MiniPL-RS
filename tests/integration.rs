@@ -153,3 +153,38 @@ pub fn read_int_add() {
   assert_eq!(io.output, vec!["123"]);
   assert_eq!(io.input.len(), 0, "Input was consumed.");
 }
+
+#[test]
+pub fn for_basic() {
+  let source = r#"
+    var i : int;
+    for i in 0 .. 3 do
+      print i;
+    end for;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["0", "1", "2", "3"]);
+}
+
+#[test]
+pub fn for_nested() {
+  let source = r#"
+    var x : int;
+    for x in 1 .. 3 do
+      var y: int;
+      for y in 1 .. 3 do
+        print x * y;
+      end for;
+    end for;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+
+  assert_match!(result => Ok(()));
+  assert_eq!(io.output, vec!["1", "2", "3", "2", "4", "6", "3", "6", "9"]);
+}

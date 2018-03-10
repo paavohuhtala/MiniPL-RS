@@ -48,7 +48,7 @@ pub fn run_script<T: Io>(source: &str, io: &mut T) -> Result<(), ExecutionError>
   // The parser parses the token stream into an AST. 
   let mut parser = Parser::new(lexer);
   // ... which we'll use to obtain the program AST.
-  let program = parser.parse_statement_list()?;
+  let program = parser.parse_program()?;
 
   // Run the type checker.
   type_check(&program)?;

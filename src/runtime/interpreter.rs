@@ -133,7 +133,25 @@ impl<'a, T: Io> Interpreter<'a, T> {
           Value::BoolV(false) => self.io.write_line(&format!("ASSERTION FAILED: {:?}", expr)),
           _ => panic!("Type checker will prevent this."),
         }
-      }
+      },
+      Statement::For { ref variable, ref from, ref to, ref run } => {
+        let from_value = self.evaluate_expression(from);
+        let to_value = self.evaluate_expression(to);
+
+        match (from_value, to_value) {
+          (Value::IntV(from), Value::IntV(to)) => {
+            for i in from .. (to + 1) {
+              // TODO: Mark variable as immutable.
+              self.assign(variable, Value::IntV(i));
+
+              for statement in run {
+                self.execute_statement(statement);
+              }
+            }
+          },
+          _ => panic!("Type checker will prevent this")
+        }
+      },
       _ => panic!(),
     }
   }
