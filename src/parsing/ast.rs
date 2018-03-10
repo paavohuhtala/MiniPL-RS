@@ -14,6 +14,7 @@ pub enum Expression {
   Div(BinaryExpr),
   Equal(BinaryExpr),
   LessThan(BinaryExpr),
+  And(BinaryExpr),
   Not(Box<Expression>),
 }
 

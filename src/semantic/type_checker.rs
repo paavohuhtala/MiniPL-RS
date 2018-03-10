@@ -66,6 +66,12 @@ impl TypeCheckingContext {
         Self::assert_types_equal(left, right)?;
         Ok(TypeName::BoolType)
       },
+      And(ref param_box) => {
+        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
+        Self::assert_types_equal(TypeName::BoolType, left)?;
+        Self::assert_types_equal(TypeName::BoolType, right)?;
+        Ok(TypeName::BoolType)
+      },
       Not(ref param_box) => {
         let inner = self.evaluate_expression_type(param_box)?;
         Self::assert_types_equal(TypeName::BoolType, inner)?;

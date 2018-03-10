@@ -156,7 +156,8 @@ impl<T: TokenSource> Parser<T> {
             Operator::Div => Expression::Div(args),
             Operator::Equal => Expression::Equal(args),
             Operator::LessThan => Expression::LessThan(args),
-            _ => panic!("Not implemented yet."),
+            Operator::And => Expression::And(args),
+            Operator::Not => panic!("Not isn't a binary operator."),
           }
         }
         Arity::Unary => {

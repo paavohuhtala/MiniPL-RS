@@ -58,33 +58,26 @@ impl<'a, T: Io> Interpreter<'a, T> {
           .clone()
       }
       Expression::Add(ref params) => {
-        let (left, right) = self.evaluate_binary_expression(params);
-
-        match (left, right) {
+        match self.evaluate_binary_expression(params) {
           (Value::IntV(a), Value::IntV(b)) => Value::IntV(a + b),
           (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
           _ => panic!("Type checker will prevent this."),
         }
       },
       Expression::Sub(ref params) => {
-        let (left, right) = self.evaluate_binary_expression(params);
-        match (left, right) {
+        match self.evaluate_binary_expression(params) {
           (Value::IntV(a), Value::IntV(b)) => Value::IntV(a - b),
           _ => panic!("Type checker will prevent this."),
         }
       }
       Expression::Mul(ref params) => {
-        let (left, right) = self.evaluate_binary_expression(params);
-
-        match (left, right) {
+        match self.evaluate_binary_expression(params) {
           (Value::IntV(a), Value::IntV(b)) => Value::IntV(a * b),
           _ => panic!("Type checker will prevent this."),
         }
       }
       Expression::Div(ref params) => {
-        let (left, right) = self.evaluate_binary_expression(params);
-
-        match (left, right) {
+        match self.evaluate_binary_expression(params) {
           (Value::IntV(a), Value::IntV(b)) => Value::IntV(a / b),
           _ => panic!("Type checker will prevent this."),
         }
@@ -96,6 +89,12 @@ impl<'a, T: Io> Interpreter<'a, T> {
       Expression::LessThan(ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
         Value::BoolV(left < right)
+      }
+      Expression::And(ref params) => {
+        match self.evaluate_binary_expression(params) {
+          (Value::BoolV(a), Value::BoolV(b)) => Value::BoolV(a && b),
+          _ => panic!("Type checker will prevent this.")          
+        }
       }
       Expression::Not(ref param) => match self.evaluate_expression(param) {
         Value::BoolV(b) => Value::BoolV(!b),

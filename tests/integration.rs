@@ -231,3 +231,16 @@ pub fn string_comparison() {
   let result = run_script(source, &mut io);
   assert_match!(result => Ok(()));
 }
+
+#[test]
+pub fn logic_operators_mix() {
+  let source = r#"
+    assert (1 = 1) &
+           (1 < 2) &
+           (!(1 = 2) & !(2 = 1));
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+}
