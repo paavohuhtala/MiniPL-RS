@@ -237,29 +237,31 @@ mod tests {
 
   macro_rules! operator_tests {
     {
-      $op: ident { $(($a_ok: ident, $b_ok: ident) -> $res: ident),* }
+      $($op: ident { $(($a_ok: ident, $b_ok: ident) -> $res: ident),* })*
     } => {
-      #[test]
-      fn $op() {
-        let ctx = ctx();
+      $(
+        #[test]
+        fn $op() {
+          let ctx = ctx();
 
-        for a in &[IntType, StringType, BoolType] {
-          for b in &[IntType, StringType, BoolType] {
-            let result = ctx.evaluate_expression_type(&ast_test_util::$op(expr_of_type(*a), expr_of_type(*b)));
-            $(
-              if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
-                assert_eq!(
-                  Ok(type_shorthand!($res)),
-                  result,
-                  stringify!(($a_ok, $b_ok) -> $res)
-                );
-                continue;
-              }
-            )*;
-            assert_match!(result => Err(_), "Should fail with types ({:?}, {:?}).", a, b);
+          for a in &[IntType, StringType, BoolType] {
+            for b in &[IntType, StringType, BoolType] {
+              let result = ctx.evaluate_expression_type(&ast_test_util::$op(expr_of_type(*a), expr_of_type(*b)));
+              $(
+                if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
+                  assert_eq!(
+                    Ok(type_shorthand!($res)),
+                    result,
+                    stringify!(($a_ok, $b_ok) -> $res)
+                  );
+                  continue;
+                }
+              )*;
+              assert_match!(result => Err(_), "Should fail with types ({:?}, {:?}).", a, b);
+            }
           }
         }
-      }
+      )*
     };
   }
 
@@ -268,43 +270,25 @@ mod tests {
       (int, int) -> int,
       (string, string) -> string
     }
-  }
-
-  operator_tests! {
     sub {
       (int, int) -> int
     }
-  }
-
-  operator_tests! {
     mul {
       (int, int) -> int
     }
-  }
-
-  operator_tests! {
     div {
       (int, int) -> int
     }
-  }
-
-  operator_tests! {
     eq {
       (int, int) -> boolean,
       (string, string) -> boolean,
       (boolean, boolean) -> boolean
     }
-  }
-
-  operator_tests! {
     lt {
       (int, int) -> boolean,
       (string, string) -> boolean,
       (boolean, boolean) -> boolean
     }
-  }
-
-  operator_tests! {
     and {
       (boolean, boolean) -> boolean
     }
