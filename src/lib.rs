@@ -32,7 +32,7 @@ impl From<TypeError> for ExecutionError {
   }
 }
 
-/// Run a script using the given IO handler (e.g ConsoleIo).
+/// Run a script using the given IO handler (e.g `ConsoleIo`).
 pub fn run_script<T: Io>(source: &str, io: &mut T) -> Result<(), ExecutionError> {
   // This is our compiler pipeline:
 

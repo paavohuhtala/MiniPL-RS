@@ -125,8 +125,8 @@ impl TypeCheckingContext {
   }
 
   fn type_check_statement(&mut self, statement: &Statement) -> Result<(), TypeError> {
-    match statement {
-      &Statement::Declare {
+    match *statement {
+      Statement::Declare {
         ref name,
         ref type_of,
         ref initial,
@@ -152,31 +152,31 @@ impl TypeCheckingContext {
         );
         Ok(())
       }
-      &Statement::Assign(ref name, ref value) => {
+      Statement::Assign(ref name, ref value) => {
         let variable_type = self.evaluate_variable_type(name)?;
         let value_type = self.evaluate_expression_type(value)?;
         Self::assert_types_equal(variable_type, value_type)?;
         self.assert_mutable(name)
       }
-      &Statement::Print(ref expr) => {
+      Statement::Print(ref expr) => {
         // Only strings and ints can be printed.
         match self.evaluate_expression_type(expr)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::PrintArgumentError(TypeName::BoolType)),
         }
       }
-      &Statement::Read(ref name) => {
+      Statement::Read(ref name) => {
         // Make sure the variable exists, and is either an int or string.
         match self.evaluate_variable_type(name)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::ReadArgumentError(TypeName::BoolType)),
         }
       }
-      &Statement::Assert(ref expr) => match self.evaluate_expression_type(expr)? {
+      Statement::Assert(ref expr) => match self.evaluate_expression_type(expr)? {
         TypeName::BoolType => Ok(()),
         other => Err(TypeError::AssertArgumentError(other)),
       },
-      &Statement::For {
+      Statement::For {
         ref variable,
         ref from,
         ref to,
@@ -186,8 +186,8 @@ impl TypeCheckingContext {
         Self::assert_types_equal(TypeName::IntType, self.evaluate_variable_type(variable)?)?;
         self.assert_mutable(variable)?;
 
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&from)?)?;
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(&to)?)?;
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(from)?)?;
+        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(to)?)?;
 
         self.set_variable_mutability(variable, false);
 

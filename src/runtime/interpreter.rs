@@ -109,7 +109,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
       Statement::Read(ref name) => {
         let str_value = self.io.read_line();
 
-        match *self.variables.get(name).unwrap() {
+        match self.variables[name] {
           Variable {
             type_of: TypeName::StringType,
             ..
