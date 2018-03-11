@@ -134,29 +134,16 @@ impl<T: TokenSource> Parser<T> {
 
     // We don't need to access this from outside, so this function can be local.
     fn create_node(operator: Operator, output: &mut Vec<Expression>) {
-      let node = match operator.get_arity() {
-        Arity::Binary => {
+      let node = match operator {
+        Operator::BinaryOperator(op) => {
           let right = output.pop().unwrap();
           let left = output.pop().unwrap();
           let args = Box::new((left, right));
-
-          match operator {
-            Operator::Add => Expression::Add(args),
-            Operator::Sub => Expression::Sub(args),
-            Operator::Mul => Expression::Mul(args),
-            Operator::Div => Expression::Div(args),
-            Operator::Equal => Expression::Equal(args),
-            Operator::LessThan => Expression::LessThan(args),
-            Operator::And => Expression::And(args),
-            Operator::Not => panic!("Not isn't a binary operator."),
-          }
+          Expression::BinaryOp(op, args)
         }
-        Arity::Unary => {
+        Operator::UnaryOperator(op) => {
           let inner = output.pop().unwrap();
-          match operator {
-            Operator::Not => Expression::Not(Box::new(inner)),
-            _ => panic!("There are no other unary operators."),
-          }
+          Expression::UnaryOp(op, Box::new(inner))
         }
       };
 

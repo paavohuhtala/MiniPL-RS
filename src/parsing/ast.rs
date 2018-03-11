@@ -1,21 +1,13 @@
 use common::types::*;
 
-// We have to heap allocate the sub expressions, because otherwise this type
-// wouldn't have a fixed (maximum) size.
-type BinaryExpr = Box<(Expression, Expression)>;
-
 #[derive(Debug)]
 pub enum Expression {
   Literal(LiteralValue),
   Variable(String),
-  Add(BinaryExpr),
-  Sub(BinaryExpr),
-  Mul(BinaryExpr),
-  Div(BinaryExpr),
-  Equal(BinaryExpr),
-  LessThan(BinaryExpr),
-  And(BinaryExpr),
-  Not(Box<Expression>),
+  // We have to heap allocate the sub expressions, because otherwise this type
+  // wouldn't have a fixed (maximum) size.
+  BinaryOp(BinaryOperator, Box<(Expression, Expression)>),
+  UnaryOp(UnaryOperator, Box<Expression>),
 }
 
 #[derive(Debug)]

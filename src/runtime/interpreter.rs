@@ -42,10 +42,15 @@ impl<'a, T: Io> Interpreter<'a, T> {
   }
 
   fn evaluate_expression(&self, expression: &Expression) -> Value {
+    use common::types::UnaryOperator::*;
+    use common::types::BinaryOperator::*;
+    use common::types::Value::*;
+    use parsing::ast::Expression::*;
+
     match *expression {
       // `Into` casts the literal value into a runtime value
-      Expression::Literal(ref value) => value.clone().into(),
-      Expression::Variable(ref variable) => {
+      Literal(ref value) => value.clone().into(),
+      Variable(ref variable) => {
         let var = *self
           .variables
           .get(variable)
@@ -57,39 +62,27 @@ impl<'a, T: Io> Interpreter<'a, T> {
           .expect("Type checker will prevent the use of uninitialised variables.")
           .clone()
       }
-      Expression::Add(ref params) => match self.evaluate_binary_expression(params) {
-        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a + b),
-        (Value::StringV(a), Value::StringV(b)) => Value::StringV(a + &b),
-        _ => panic!("Type checker will prevent this."),
-      },
-      Expression::Sub(ref params) => match self.evaluate_binary_expression(params) {
-        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a - b),
-        _ => panic!("Type checker will prevent this."),
-      },
-      Expression::Mul(ref params) => match self.evaluate_binary_expression(params) {
-        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a * b),
-        _ => panic!("Type checker will prevent this."),
-      },
-      Expression::Div(ref params) => match self.evaluate_binary_expression(params) {
-        (Value::IntV(a), Value::IntV(b)) => Value::IntV(a / b),
-        _ => panic!("Type checker will prevent this."),
-      },
-      Expression::Equal(ref params) => {
+      BinaryOp(ref op, ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
-        Value::BoolV(left == right)
+        match (*op, left, right) {
+          (Add, IntV(a), IntV(b)) => IntV(a + b),
+          (Add, StringV(a), StringV(b)) => StringV(a + &b),
+          (Sub, IntV(a), IntV(b)) => IntV(a - b),
+          (Mul, IntV(a), IntV(b)) => IntV(a * b),
+          (Div, IntV(a), IntV(b)) => IntV(a / b),
+          (Equal, a, b) => BoolV(a == b),
+          (LessThan, a, b) => BoolV(a < b),
+          (And, BoolV(a), BoolV(b)) => BoolV(a && b),
+          _ => panic!("Type checker will prevent this."),
+        }
       }
-      Expression::LessThan(ref params) => {
-        let (left, right) = self.evaluate_binary_expression(params);
-        Value::BoolV(left < right)
+      UnaryOp(ref op, ref param) => {
+        let inner = self.evaluate_expression(param);
+        match (*op, inner) {
+          (Not, BoolV(x)) => BoolV(!x),
+          _ => panic!("Type checker will prevent this."),
+        }
       }
-      Expression::And(ref params) => match self.evaluate_binary_expression(params) {
-        (Value::BoolV(a), Value::BoolV(b)) => Value::BoolV(a && b),
-        _ => panic!("Type checker will prevent this."),
-      },
-      Expression::Not(ref param) => match self.evaluate_expression(param) {
-        Value::BoolV(b) => Value::BoolV(!b),
-        _ => panic!("Type checker will prevent this."),
-      },
     }
   }
 
@@ -151,15 +144,13 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let to_value = self.evaluate_expression(to);
 
         match (from_value, to_value) {
-          (Value::IntV(from), Value::IntV(to)) => {
-            for i in from..(to + 1) {
-              self.assign(variable, Value::IntV(i));
+          (Value::IntV(from), Value::IntV(to)) => for i in from..(to + 1) {
+            self.assign(variable, Value::IntV(i));
 
-              for statement in run {
-                self.execute_statement(statement);
-              }
+            for statement in run {
+              self.execute_statement(statement);
             }
-          }
+          },
           _ => panic!("Type checker will prevent this"),
         }
       }

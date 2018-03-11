@@ -53,7 +53,7 @@ impl fmt::Display for Value {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Operator {
+pub enum BinaryOperator {
   Add,
   Sub,
   Mul,
@@ -61,7 +61,17 @@ pub enum Operator {
   LessThan,
   Equal,
   And,
-  Not,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum UnaryOperator {
+  Not
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Operator {
+  BinaryOperator(BinaryOperator),
+  UnaryOperator(UnaryOperator)
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -73,19 +83,24 @@ pub enum Arity {
 impl Operator {
   pub fn get_precedence(self) -> u8 {
     use self::Operator::*;
+    use self::BinaryOperator::*;
+    use self::UnaryOperator::*;
+
     match self {
-      Not => 3,
-      Mul | Div => 2,
-      Add | Sub | And => 1,
-      LessThan | Equal => 0,
+      UnaryOperator(Not) => 3,
+      BinaryOperator(op) => match op {
+        Mul | Div => 2,
+        Add | Sub | And => 1,
+        LessThan | Equal => 0
+      }
     }
   }
 
   pub fn get_arity(self) -> Arity {
     use self::Operator::*;
     match self {
-      Add | Sub | Mul | Div | LessThan | Equal | And => Arity::Binary,
-      Not => Arity::Unary,
+      UnaryOperator(_) => Arity::Unary,
+      BinaryOperator(_) => Arity::Binary
     }
   }
 }

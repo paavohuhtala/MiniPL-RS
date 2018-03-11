@@ -1,15 +1,18 @@
 // This file provides small utility functions for writing lexer tests.
 use common::types::*;
+use common::types::Operator::*;
+use common::types::BinaryOperator::*;
+
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
 use parsing::token_source::TokenSource;
 
 pub fn add_op() -> Token {
-  Token::Operator(Operator::Add)
+  Token::Operator(BinaryOperator(Add))
 }
 
 pub fn equal_op() -> Token {
-  Token::Operator(Operator::Equal)
+  Token::Operator(BinaryOperator(Equal))
 }
 
 pub fn number(i: i32) -> Token {

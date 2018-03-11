@@ -61,18 +61,23 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
 }
 
 fn parse_single_char_token(ch: char) -> Token {
+  use common::types::Token::*;
+  use common::types::Operator::*;
+  use common::types::BinaryOperator::*;
+  use common::types::UnaryOperator::*;
+
   match ch {
-    ';' => Token::Semicolon,
-    '(' => Token::LParen,
-    ')' => Token::RParen,
-    '+' => Token::Operator(Operator::Add),
-    '-' => Token::Operator(Operator::Sub),
-    '*' => Token::Operator(Operator::Mul),
-    '/' => Token::Operator(Operator::Div),
-    '<' => Token::Operator(Operator::LessThan),
-    '=' => Token::Operator(Operator::Equal),
-    '&' => Token::Operator(Operator::And),
-    '!' => Token::Operator(Operator::Not),
+    ';' => Semicolon,
+    '(' => LParen,
+    ')' => RParen,
+    '+' => Operator(BinaryOperator(Add)),
+    '-' => Operator(BinaryOperator(Sub)),
+    '*' => Operator(BinaryOperator(Mul)),
+    '/' => Operator(BinaryOperator(Div)),
+    '<' => Operator(BinaryOperator(LessThan)),
+    '=' => Operator(BinaryOperator(Equal)),
+    '&' => Operator(BinaryOperator(And)),
+    '!' => Operator(UnaryOperator(Not)),
     _ => panic!("This should not happen."),
   }
 }

@@ -16,7 +16,8 @@ pub enum TypeError {
     expected: TypeName,
     was: TypeName,
   },
-  AddTypeError(TypeName, TypeName),
+  InvalidBinaryOp(BinaryOperator, TypeName, TypeName),
+  InvalidUnaryOp(UnaryOperator, TypeName),
   PrintArgumentError(TypeName),
   ReadArgumentError(TypeName),
   AssertArgumentError(TypeName),
@@ -60,38 +61,37 @@ impl TypeCheckingContext {
 
   fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
     use self::Expression::*;
+    use self::TypeError::*;
+    use common::types::TypeName::*;
+    use common::types::BinaryOperator::*;
+    use common::types::UnaryOperator::*;
+
     match *expression {
       Literal(ref literal) => Ok(self.get_literal_type(literal)),
       Variable(ref variable) => self.evaluate_variable_type(variable),
-      Add(ref param_box) => {
-        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
-        match (left, right) {
-          (TypeName::IntType, TypeName::IntType) => Ok(TypeName::IntType),
-          (TypeName::StringType, TypeName::StringType) => Ok(TypeName::StringType),
-          (a, b) => Err(TypeError::AddTypeError(a, b)),
+      BinaryOp(ref op, ref params) => {
+        let (left, right) = self.evaluate_binary_expression_type(params)?;
+        match (*op, left, right) {
+          (Add, IntType, IntType)
+          | (Sub, IntType, IntType)
+          | (Mul, IntType, IntType)
+          | (Div, IntType, IntType) => Ok(IntType),
+
+          (Add, StringType, StringType) => Ok(StringType),
+
+          (Equal, x, y) if x == y => Ok(BoolType),
+          (LessThan, x, y) if x == y => Ok(BoolType),
+          (And, BoolType, BoolType) => Ok(BoolType),
+
+          (op, left, right) => Err(InvalidBinaryOp(op, left, right)),
         }
       }
-      Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
-        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
-        Self::assert_types_equal(TypeName::IntType, left)?;
-        Self::assert_types_equal(TypeName::IntType, right)?;
-        Ok(left)
-      }
-      Equal(ref param_box) | LessThan(ref param_box) => {
-        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
-        Self::assert_types_equal(left, right)?;
-        Ok(TypeName::BoolType)
-      }
-      And(ref param_box) => {
-        let (left, right) = self.evaluate_binary_expression_type(param_box)?;
-        Self::assert_types_equal(TypeName::BoolType, left)?;
-        Self::assert_types_equal(TypeName::BoolType, right)?;
-        Ok(TypeName::BoolType)
-      }
-      Not(ref param_box) => {
-        let inner = self.evaluate_expression_type(param_box)?;
-        Self::assert_types_equal(TypeName::BoolType, inner)?;
-        Ok(TypeName::BoolType)
+      UnaryOp(ref op, ref param) => {
+        let inner = self.evaluate_expression_type(param)?;
+        match (*op, inner) {
+          (Not, BoolType) => Ok(BoolType),
+          (op, inner) => Err(InvalidUnaryOp(op, inner)),
+        }
       }
     }
   }
