@@ -192,7 +192,7 @@ impl TypeCheckingContext {
         self.set_variable_mutability(variable, false);
 
         for statement in run {
-          self.type_check_statement(statement)?;
+          self.type_check_statement(&statement.statement)?;
         }
 
         self.set_variable_mutability(variable, true);
@@ -203,13 +203,13 @@ impl TypeCheckingContext {
   }
 }
 
-pub fn type_check(program: &[Statement]) -> Result<(), TypeError> {
+pub fn type_check(program: &[StatementWithCtx]) -> Result<(), TypeError> {
   let mut context = TypeCheckingContext {
     symbols: HashMap::new(),
   };
 
   for statement in program {
-    context.type_check_statement(statement)?;
+    context.type_check_statement(&statement.statement)?;
   }
 
   Ok(())

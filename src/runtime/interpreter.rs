@@ -148,7 +148,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
             self.assign(variable, Value::IntV(i));
 
             for statement in run {
-              self.execute_statement(statement);
+              self.execute_statement(&statement.statement);
             }
           },
           _ => panic!("Type checker will prevent this"),
@@ -159,7 +159,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
 
   pub fn execute(&mut self, program: Program) {
     for statement in program {
-      self.execute_statement(statement);
+      self.execute_statement(&statement.statement);
     }
   }
 }

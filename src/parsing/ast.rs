@@ -22,11 +22,18 @@ pub enum Statement {
     variable: String,
     from: Expression,
     to: Expression,
-    run: Vec<Statement>,
+    run: Vec<StatementWithCtx>,
   },
   Print(Expression),
   Read(String),
   Assert(Expression),
 }
 
-pub type Program<'a> = &'a [Statement];
+#[derive(Debug)]
+pub struct StatementWithCtx {
+  pub offset: usize,
+  pub length: usize,
+  pub statement: Statement
+}
+
+pub type Program<'a> = &'a [StatementWithCtx];

@@ -286,21 +286,23 @@ impl<T: TokenSource> Parser<T> {
     }
   }
 
-  pub fn parse_statement_list(&mut self) -> Result<Vec<Statement>, ParserError> {
+  pub fn parse_statement_list(&mut self) -> Result<Vec<StatementWithCtx>, ParserError> {
     let mut statements = Vec::new();
 
     loop {
-      let next = self.lexer.peek()?.token;
+      let next = self.lexer.peek()?;
       // If we reached end of file OR the end keyword, stop parsing.
-      if next == Token::EndOfFile || next == Token::End {
+      if next.token == Token::EndOfFile || next.token == Token::End {
         break;
       }
 
+      let offset = next.offset;
       let statement = self.parse_statement()?;
+      let end = self.lexer.peek()?.offset - 1;
 
-      println!("Statement: {:?}", statement);
-
-      statements.push(statement);
+      let with_ctx = StatementWithCtx { offset, length: end - offset,  statement };
+      println!("Statement: {:?}", with_ctx);
+      statements.push(with_ctx);
 
       if self.lexer.reached_end() {
         break;
@@ -310,7 +312,7 @@ impl<T: TokenSource> Parser<T> {
     Ok(statements)
   }
 
-  pub fn parse_program(&mut self) -> Result<Vec<Statement>, ParserError> {
+  pub fn parse_program(&mut self) -> Result<Vec<StatementWithCtx>, ParserError> {
     let program = self.parse_statement_list()?;
     self.expect_eq(&Token::EndOfFile)?;
     Ok(program)
