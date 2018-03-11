@@ -220,7 +220,7 @@ pub fn type_check(program: &[Statement]) -> Result<(), TypeError> {
 mod tests {
   use super::*;
   use common::types::TypeName::*;
-  use parsing::ast_test_util::*;
+  use parsing::ast_test_util;
   use semantic::test_util::*;
 
   fn ctx() -> TypeCheckingContext {
@@ -239,92 +239,74 @@ mod tests {
     {
       $op: ident { $(($a_ok: ident, $b_ok: ident) -> $res: ident),* }
     } => {
-      let ctx = ctx();
+      #[test]
+      fn $op() {
+        let ctx = ctx();
 
-      for a in &[IntType, StringType, BoolType] {
-        for b in &[IntType, StringType, BoolType] {
-          let result = ctx.evaluate_expression_type(&$op(expr_of_type(*a), expr_of_type(*b)));
-          $(
-            if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
-              assert_eq!(
-                Ok(type_shorthand!($res)),
-                result,
-                stringify!(($a_ok, $b_ok) -> $res)
-              );
-              continue;
-            }
-          )*;
-          assert_match!(result => Err(_), "Should fail with types ({:?}, {:?}).", a, b);
+        for a in &[IntType, StringType, BoolType] {
+          for b in &[IntType, StringType, BoolType] {
+            let result = ctx.evaluate_expression_type(&ast_test_util::$op(expr_of_type(*a), expr_of_type(*b)));
+            $(
+              if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
+                assert_eq!(
+                  Ok(type_shorthand!($res)),
+                  result,
+                  stringify!(($a_ok, $b_ok) -> $res)
+                );
+                continue;
+              }
+            )*;
+            assert_match!(result => Err(_), "Should fail with types ({:?}, {:?}).", a, b);
+          }
         }
       }
     };
   }
 
-  #[test]
-  fn add_operator() {
-    operator_tests! {
-      add {
-        (int, int) -> int,
-        (string, string) -> string
-      }
+  operator_tests! {
+    add {
+      (int, int) -> int,
+      (string, string) -> string
     }
   }
 
-  #[test]
-  fn sub_operator() {
-    operator_tests! {
-      sub {
-        (int, int) -> int
-      }
+  operator_tests! {
+    sub {
+      (int, int) -> int
     }
   }
 
-  #[test]
-  fn mul_operator() {
-    operator_tests! {
-      mul {
-        (int, int) -> int
-      }
+  operator_tests! {
+    mul {
+      (int, int) -> int
     }
   }
 
-  #[test]
-  fn div_operator() {
-    operator_tests! {
-      div {
-        (int, int) -> int
-      }
+  operator_tests! {
+    div {
+      (int, int) -> int
     }
   }
 
-  #[test]
-  fn eq_operator() {
-    operator_tests! {
-      eq {
-        (int, int) -> boolean,
-        (string, string) -> boolean,
-        (boolean, boolean) -> boolean
-      }
+  operator_tests! {
+    eq {
+      (int, int) -> boolean,
+      (string, string) -> boolean,
+      (boolean, boolean) -> boolean
     }
   }
 
-  #[test]
-  fn lt_operator() {
-    operator_tests! {
-      lt {
-        (int, int) -> boolean,
-        (string, string) -> boolean,
-        (boolean, boolean) -> boolean
-      }
+  operator_tests! {
+    lt {
+      (int, int) -> boolean,
+      (string, string) -> boolean,
+      (boolean, boolean) -> boolean
     }
   }
 
-  #[test]
-  fn and_operator() {
-    operator_tests! {
-      and {
-        (boolean, boolean) -> boolean
-      }
+  operator_tests! {
+    and {
+      (boolean, boolean) -> boolean
     }
   }
 }
