@@ -28,8 +28,8 @@ pub fn lex(input: &str) -> Vec<Token> {
   let mut tokens = Vec::new();
 
   while !lexer.reached_end() {
-    let token = lexer.next().unwrap();
-    tokens.push(token);
+    let token_with_ctx = lexer.next().unwrap();
+    tokens.push(token_with_ctx.token);
   }
 
   tokens

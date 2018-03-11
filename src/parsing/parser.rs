@@ -38,26 +38,13 @@ impl<T: TokenSource> Parser<T> {
 
   fn expect_eq(&mut self, token: &Token) -> Result<(), ParserError> {
     match self.lexer.peek()? {
-      ref parsed_token if parsed_token == token => {
+      ref parsed_token if &parsed_token.token == token => {
         self.lexer.advance();
         Ok(())
       }
       parsed_token => Err(ParserError::UnexpectedToken {
         expected: token.get_kind(),
-        was: parsed_token.get_kind(),
-      }),
-    }
-  }
-
-  fn expect_kind(&mut self, kind: TokenKind) -> Result<(), ParserError> {
-    match self.lexer.peek()? {
-      ref parsed_token if parsed_token.get_kind() == kind => {
-        self.lexer.advance();
-        Ok(())
-      }
-      parsed_token => Err(ParserError::UnexpectedToken {
-        expected: kind,
-        was: parsed_token.get_kind(),
+        was: parsed_token.token.get_kind(),
       }),
     }
   }
@@ -80,7 +67,7 @@ impl<T: TokenSource> Parser<T> {
   fn parse_read_statement(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Read)?;
 
-    let identifier = self.lexer.peek()?.expect_identifier()?;
+    let identifier = self.lexer.peek()?.token.expect_identifier()?;
     self.advance()?;
 
     self.expect_eq(&Token::Semicolon)?;
@@ -91,15 +78,15 @@ impl<T: TokenSource> Parser<T> {
   fn parse_decleration(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Var)?;
 
-    let name = self.lexer.peek()?.expect_identifier()?;
+    let name = self.lexer.peek()?.token.expect_identifier()?;
     self.advance()?;
 
     self.expect_eq(&Token::Colon)?;
 
-    let type_of = self.lexer.peek()?.expect_type()?;
+    let type_of = self.lexer.peek()?.token.expect_type()?;
     self.advance()?;
 
-    let initial_value = if self.lexer.peek()? == Token::Assign {
+    let initial_value = if self.lexer.peek()?.token == Token::Assign {
       self.advance()?;
 
       let expression = self.parse_expression()?;
@@ -118,7 +105,7 @@ impl<T: TokenSource> Parser<T> {
   }
 
   fn parse_assignment(&mut self) -> Result<Statement, ParserError> {
-    let identifier = self.lexer.peek()?.expect_identifier()?;
+    let identifier = self.lexer.peek()?.token.expect_identifier()?;
     self.advance()?;
 
     self.expect_eq(&Token::Assign)?;
@@ -173,7 +160,7 @@ impl<T: TokenSource> Parser<T> {
     }
 
     loop {
-      let next = self.lexer.peek()?;
+      let next = self.lexer.peek()?.token;
 
       match next {
         // Literals are just pushed to the output stack
@@ -269,7 +256,7 @@ impl<T: TokenSource> Parser<T> {
   pub fn parse_for(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::For)?;
 
-    let variable = self.lexer.peek()?.expect_identifier()?;
+    let variable = self.lexer.peek()?.token.expect_identifier()?;
     self.advance()?;
 
     self.expect_eq(&Token::In)?;
@@ -297,7 +284,7 @@ impl<T: TokenSource> Parser<T> {
   }
 
   pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-    let first = self.lexer.peek()?;
+    let first = self.lexer.peek()?.token;
     match first {
       Token::Print => self.parse_print_statement(),
       Token::Read => self.parse_read_statement(),
@@ -313,7 +300,7 @@ impl<T: TokenSource> Parser<T> {
     let mut statements = Vec::new();
 
     loop {
-      let next = self.lexer.peek()?;
+      let next = self.lexer.peek()?.token;
       // If we reached end of file OR the end keyword, stop parsing.
       if next == Token::EndOfFile || next == Token::End {
         break;

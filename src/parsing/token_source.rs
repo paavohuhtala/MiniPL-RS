@@ -10,8 +10,8 @@ pub trait TokenSource {
   fn reached_end(&self) -> bool;
 
   /// Tries to read the next token.
-  fn peek(&mut self) -> Result<Token, LexerError>;
+  fn peek(&mut self) -> Result<TokenWithCtx, LexerError>;
 
   /// Tries to read the next token, and advances to the next token on success.
-  fn next(&mut self) -> Result<Token, LexerError>;
+  fn next(&mut self) -> Result<TokenWithCtx, LexerError>;
 }

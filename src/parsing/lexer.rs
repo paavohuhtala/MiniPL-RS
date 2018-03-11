@@ -87,13 +87,15 @@ fn read_number_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   }
 }
 
-fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
+fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
   // Skip whitespace
   input.advance_until(|ch| !is_whitespace(ch));
 
   if input.reached_end() {
-    return Ok(Token::EndOfFile);
+    return Ok(TokenWithCtx{ offset: input.offset, token: Token::EndOfFile });
   }
+
+  let offset = input.offset;
 
   // TODO: Check for tokens.
   let first = input.peek()?;
@@ -127,14 +129,14 @@ fn next_lexeme(input: &mut CharStream) -> Result<Token, LexerError> {
     _ => read_keyword_or_identifier(input),
   };
 
-  println!("Token: {:?}", token);
+  println!("[{}]: Token: {:?}", offset, token);
 
-  token
+  token.map(|token| { TokenWithCtx { offset, token } })
 }
 
 pub struct BufferedLexer<'a> {
   stream: CharStream<'a>,
-  tokens: Vec<Token>,
+  tokens: Vec<TokenWithCtx>,
 }
 
 impl<'a> BufferedLexer<'a> {
@@ -159,7 +161,7 @@ impl<'a> TokenSource for BufferedLexer<'a> {
     self.tokens.is_empty() && self.stream.reached_end()
   }
 
-  fn peek(&mut self) -> Result<Token, LexerError> {
+  fn peek(&mut self) -> Result<TokenWithCtx, LexerError> {
     if self.tokens.is_empty() {
       let next = next_lexeme(&mut self.stream)?;
       self.tokens.push(next.clone());
@@ -172,7 +174,7 @@ impl<'a> TokenSource for BufferedLexer<'a> {
     }
   }
 
-  fn next(&mut self) -> Result<Token, LexerError> {
+  fn next(&mut self) -> Result<TokenWithCtx, LexerError> {
     if self.tokens.is_empty() {
       next_lexeme(&mut self.stream)
     } else {

@@ -8,7 +8,7 @@ use common::errors::*;
 #[derive(Debug)]
 pub struct CharStream<'a> {
   chars: &'a [char],
-  offset: usize,
+  pub offset: usize,
 }
 
 impl<'a> CharStream<'a> {

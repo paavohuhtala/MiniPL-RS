@@ -113,6 +113,12 @@ pub enum Token {
   EndOfFile,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct TokenWithCtx {
+  pub offset: usize,
+  pub token: Token
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenKind {
   IdentifierK,
