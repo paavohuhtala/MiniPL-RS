@@ -9,28 +9,6 @@ pub struct Parser<T: TokenSource> {
   lexer: T,
 }
 
-impl Token {
-  pub fn expect_identifier(&self) -> Result<String, ParserError> {
-    match self {
-      &Token::Identifier(ref identifier) => Ok(identifier.clone()),
-      other => Err(ParserError::UnexpectedToken {
-        expected: TokenKind::IdentifierK,
-        was: other.get_kind(),
-      }),
-    }
-  }
-
-  pub fn expect_type(&self) -> Result<TypeName, ParserError> {
-    match self {
-      &Token::Type(ref type_name) => Ok(*type_name),
-      other => Err(ParserError::UnexpectedToken {
-        expected: TokenKind::TypeK,
-        was: other.get_kind(),
-      }),
-    }
-  }
-}
-
 impl<T: TokenSource> Parser<T> {
   pub fn new(lexer: T) -> Parser<T> {
     Parser { lexer }
@@ -45,6 +23,36 @@ impl<T: TokenSource> Parser<T> {
       parsed_token => Err(ParserError::UnexpectedToken {
         expected: token.get_kind(),
         was: parsed_token.token.get_kind(),
+      }),
+    }
+  }
+
+  fn expect_identifier(&mut self) -> Result<String, ParserError> {
+    let token = self.lexer.peek()?.token;
+
+    match token {
+      Token::Identifier(name) => {
+        self.advance()?;
+        Ok(name.clone())
+      }
+      other => Err(ParserError::UnexpectedToken {
+        expected: TokenKind::IdentifierK,
+        was: other.get_kind(),
+      }),
+    }
+  }
+
+  fn expect_type(&mut self) -> Result<TypeName, ParserError> {
+    let token = self.lexer.peek()?.token;
+
+    match token {
+      Token::Type(type_name) => {
+        self.advance()?;
+        Ok(type_name)
+      }
+      other => Err(ParserError::UnexpectedToken {
+        expected: TokenKind::TypeK,
+        was: other.get_kind(),
       }),
     }
   }
@@ -67,8 +75,7 @@ impl<T: TokenSource> Parser<T> {
   fn parse_read_statement(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Read)?;
 
-    let identifier = self.lexer.peek()?.token.expect_identifier()?;
-    self.advance()?;
+    let identifier = self.expect_identifier()?;
 
     self.expect_eq(&Token::Semicolon)?;
 
@@ -78,13 +85,11 @@ impl<T: TokenSource> Parser<T> {
   fn parse_decleration(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::Var)?;
 
-    let name = self.lexer.peek()?.token.expect_identifier()?;
-    self.advance()?;
+    let name = self.expect_identifier()?;
 
     self.expect_eq(&Token::Colon)?;
 
-    let type_of = self.lexer.peek()?.token.expect_type()?;
-    self.advance()?;
+    let type_of = self.expect_type()?;
 
     let initial_value = if self.lexer.peek()?.token == Token::Assign {
       self.advance()?;
@@ -105,8 +110,7 @@ impl<T: TokenSource> Parser<T> {
   }
 
   fn parse_assignment(&mut self) -> Result<Statement, ParserError> {
-    let identifier = self.lexer.peek()?.token.expect_identifier()?;
-    self.advance()?;
+    let identifier = self.expect_identifier()?;
 
     self.expect_eq(&Token::Assign)?;
 
@@ -256,8 +260,7 @@ impl<T: TokenSource> Parser<T> {
   pub fn parse_for(&mut self) -> Result<Statement, ParserError> {
     self.expect_eq(&Token::For)?;
 
-    let variable = self.lexer.peek()?.token.expect_identifier()?;
-    self.advance()?;
+    let variable = self.expect_identifier()?;
 
     self.expect_eq(&Token::In)?;
 
