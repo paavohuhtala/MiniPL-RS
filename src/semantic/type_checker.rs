@@ -68,7 +68,7 @@ impl TypeCheckingContext {
         match (left, right) {
           (TypeName::IntType, TypeName::IntType) => Ok(TypeName::IntType),
           (TypeName::StringType, TypeName::StringType) => Ok(TypeName::StringType),
-          (a, b) => Err(TypeError::AddTypeError(a, b))
+          (a, b) => Err(TypeError::AddTypeError(a, b)),
         }
       }
       Sub(ref param_box) | Mul(ref param_box) | Div(ref param_box) => {
@@ -220,6 +220,7 @@ pub fn type_check(program: &[Statement]) -> Result<(), TypeError> {
 mod tests {
   use super::*;
   use common::types::TypeName::*;
+  use parsing::ast_test_util::*;
   use semantic::test_util::*;
 
   fn ctx() -> TypeCheckingContext {
@@ -235,7 +236,7 @@ mod tests {
   }
 
   macro_rules! operator_tests {
-    { 
+    {
       $op: ident { $(($a_ok: ident, $b_ok: ident) -> $res: ident),* }
     } => {
       let ctx = ctx();
@@ -274,6 +275,55 @@ mod tests {
     operator_tests! {
       sub {
         (int, int) -> int
+      }
+    }
+  }
+
+  #[test]
+  fn mul_operator() {
+    operator_tests! {
+      mul {
+        (int, int) -> int
+      }
+    }
+  }
+
+  #[test]
+  fn div_operator() {
+    operator_tests! {
+      div {
+        (int, int) -> int
+      }
+    }
+  }
+
+  #[test]
+  fn eq_operator() {
+    operator_tests! {
+      eq {
+        (int, int) -> boolean,
+        (string, string) -> boolean,
+        (boolean, boolean) -> boolean
+      }
+    }
+  }
+
+  #[test]
+  fn lt_operator() {
+    operator_tests! {
+      lt {
+        (int, int) -> boolean,
+        (string, string) -> boolean,
+        (boolean, boolean) -> boolean
+      }
+    }
+  }
+
+  #[test]
+  fn and_operator() {
+    operator_tests! {
+      and {
+        (boolean, boolean) -> boolean
       }
     }
   }

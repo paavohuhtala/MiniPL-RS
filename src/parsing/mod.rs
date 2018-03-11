@@ -7,3 +7,6 @@ pub mod ast;
 
 #[cfg(test)]
 mod lexer_test_util;
+
+#[cfg(test)]
+pub mod ast_test_util;
