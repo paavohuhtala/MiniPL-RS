@@ -1,5 +1,7 @@
 # MiniPL-RS
 
+[![Build Status](https://travis-ci.org/paavohuhtala/MiniPL-RS.svg?branch=master)](https://travis-ci.org/paavohuhtala/MiniPL-RS)
+
 An interpreter for a small strongly typed scripting language. Written in Rust for the Compilers course at University of Helsinki during spring 2018.
 
 As far as I know the specification of the language is not publicly available (since it's part of the course materials), but in a nutshell it's a strongly typed scripting languages, with a Pascal-ish syntax.
