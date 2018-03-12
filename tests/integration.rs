@@ -38,141 +38,127 @@ macro_rules! assert_match {
   }
 }
 
-use miniplrs::ExecutionError;
-use miniplrs::common::errors::*;
-use miniplrs::common::types::*;
-use miniplrs::semantic::type_checker::TypeError;
+macro_rules! integration_tests {
+  {$( $test: ident($src: expr) {
+    result $pattern: pat,
+    input $input: tt,
+    output $output: tt
+  } )* } => {
+    $(
+      #[test]
+      pub fn $test() {
+        println!("Running test {}", stringify!($test));
+        let input: &[&'static str] = &$input;
+        let output: &[&'static str] = &$output;
 
-#[test]
-pub fn run_hello_world() {
-  let source = r#"
-    print "Hello, world!";
-  "#;
+        let source: &'static str = $src;
+        let mut io = TestIo::new(input);
+        let result = run_script(source, &mut io);
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["Hello, world!"]);
-}
-
-#[test]
-pub fn run_hello_world_without_semicolon() {
-  let source = r#"
-    print "Hello, world!"
-  "#;
-
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Err(
-    ExecutionError::ParserError(
-      ParserError::UnexpectedToken {
-        expected: TokenKind::SemicolonK,
-        was: TokenKind::EndOfFileK
+        assert_match!(result => $pattern);
+        assert_eq!(io.output, output);
       }
-    )
-  ));
-  assert_eq!(io.output.len(), 0);
+    )*
+  };
 }
 
-#[test]
-pub fn bool_operators() {
-  let source = r#"
+use miniplrs::ExecutionError;
+use miniplrs::common::types::TokenKind::*;
+use miniplrs::common::errors::ParserError::*;
+use miniplrs::common::errors::LexerError::*;
+use miniplrs::semantic::type_checker::TypeError::*;
+
+integration_tests! {
+  empty_program("") {
+    result Ok(_),
+    input [],
+    output []
+  }
+
+  hello_world(r#"
+    print "Hello, world!";
+  "#) {
+    result Ok(_),
+    input [],
+    output ["Hello, world!"]
+  }
+
+  hello_world_without_semicolon(r#"
+    print "Hello, world!"
+  "#) {
+    result Err(
+      ExecutionError::ParserError(
+        UnexpectedToken { expected: SemicolonK, was: EndOfFileK }
+      )
+    ),
+    input [],
+    output []
+  }
+
+  bool_operators(r#"
     var a : int := 10;
     var b : int := 20;
     var c : bool := !(a = b) = !(b = a);
     assert c;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output.len(), 0);
-}
-
-#[test]
-pub fn assignment_valid() {
-  let source = r#"
+  assignment_valid(r#"
     var a : int := 10;
     print a;
     a := 20;
     print a;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["10", "20"]
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["10", "20"]);
-}
-
-#[test]
-pub fn assignment_non_existant_identifier() {
-  let source = r#"
+  assignment_non_existant_identifier(r#"
     a := 10;
     print a;
-  "#;
+  "#) {
+    result Err(ExecutionError::TypeError(UndeclaredIdentifier(_a))),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Err(ExecutionError::TypeError(TypeError::UndeclaredIdentifier(_a))));
-}
-
-#[test]
-pub fn read_roundtrip_string() {
-  let source = r#"
+  read_roundtrip_string(r#"
     var a : string;
     read a;
     print a;
-  "#;
+  "#) {
+    result Ok(_),
+    input ["Neat"],
+    output ["Neat"]
+  }
 
-  let mut io = TestIo::new(&["Well this is neat."]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["Well this is neat."]);
-  assert_eq!(io.input.len(), 0, "Input was consumed.");
-}
-
-#[test]
-pub fn read_int_add() {
-  let source = r#"
+  read_int_add(r#"
     var a : int;
     read a;
     a := a + 101;
     print a;
-  "#;
+  "#) {
+    result Ok(_),
+    input ["22"],
+    output ["123"]
+  }
 
-  let mut io = TestIo::new(&["22"]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["123"]);
-  assert_eq!(io.input.len(), 0, "Input was consumed.");
-}
-
-#[test]
-pub fn for_basic() {
-  let source = r#"
+  for_basic(r#"
     var i : int;
     for i in 0 .. 3 do
       print i;
     end for;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["0", "1", "2", "3"]
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["0", "1", "2", "3"]);
-}
-
-#[test]
-pub fn for_nested() {
-  let source = r#"
+  for_nested(r#"
     var x : int;
     for x in 1 .. 3 do
       var y: int;
@@ -180,134 +166,96 @@ pub fn for_nested() {
         print x * y;
       end for;
     end for;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["1", "2", "3", "2", "4", "6", "3", "6", "9"]
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["1", "2", "3", "2", "4", "6", "3", "6", "9"]);
-}
-
-#[test]
-pub fn arithmetic_sub_order() {
-  let source = r#"
+  arithmetic_sub_order(r#"
     var x : int := 3;
     var y : int := 5;
     print x - y;
     print y - x;
     print x - x;
     print y - y;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["-2", "2", "0", "0"]
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["-2", "2", "0", "0"]);
-}
-
-#[test]
-pub fn arithmetic_div_uses_truncation() {
-  let source = r#"
+  arithmetic_div_uses_truncation(r#"
     print 10 / 2;
     print 10 / 3;
     print 100 / 101;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["5", "3", "0"]
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-  assert_eq!(io.output, vec!["5", "3", "0"]);
-}
-
-#[test]
-pub fn string_comparison() {
-  let source = r#"
+  string_comparison(r#"
     assert "aaa" < "bbb";
     assert !("bbb" < "aaa");
-  "#;
+    assert "bbb" < "ccc";
+  "#) {
+    result Ok(_),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-}
-
-#[test]
-pub fn logic_operators_mix() {
-  let source = r#"
+  logic_operators_mix(r#"
     assert (1 = 1) &
            (1 < 2) &
            (!(1 = 2) & !(2 = 1));
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-}
-
-#[test]
-pub fn loop_variable_mutability() {
-  let source = r#"
+  loop_variable_mutability(r#"
     var i : int;
     for i in 0 .. 10 do
       i := 100;
     end for; 
-  "#;
+  "#) {
+    result Err(ExecutionError::TypeError(AssignToImmutable(_))),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Err(ExecutionError::TypeError(TypeError::AssignToImmutable(_i))));
-}
-
-#[test]
-pub fn comments() {
-  let source = r#"
+  comments(r#"
     // Line comment!
     /*
       Block comment!
     */
     assert 1 = 1;
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-}
-
-#[test]
-pub fn just_comments() {
-  let source = r#"
+  just_comments(r#"
     // Line comment!
     /*Block comment!*/
-  "#;
+  "#) {
+    result Ok(_),
+    input [],
+    output []
+  }
 
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Ok(()));
-}
+  invalid_block_comment_1(r#"/*/"#) {
+    result Err(ExecutionError::ParserError(LexerError(UnterminatedComment))),
+    input [],
+    output []
+  }
 
-#[test]
-pub fn invalid_block_comment_1() {
-  let source = r#"/*/"#;
-
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Err(
-    ExecutionError::ParserError(
-      ParserError::LexerError(LexerError::UnterminatedComment)
-    )
-  ));
-}
-
-#[test]
-pub fn invalid_block_comment_2() {
-  let source = r#"/* * * * * * / * / * / **"#;
-
-  let mut io = TestIo::new(&[]);
-  let result = run_script(source, &mut io);
-  assert_match!(result => Err(
-    ExecutionError::ParserError(
-      ParserError::LexerError(LexerError::UnterminatedComment)
-    )
-  ));
+  invalid_block_comment_2(r#"/* * * * * * / * / * / **"#) {
+    result Err(ExecutionError::ParserError(LexerError(UnterminatedComment))),
+    input [],
+    output []
+  }
 }
