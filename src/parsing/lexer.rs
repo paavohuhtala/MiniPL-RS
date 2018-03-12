@@ -3,7 +3,7 @@ use common::errors::*;
 
 use parsing::util::*;
 use parsing::char_stream::*;
-use parsing::token_source::TokenStream;
+use parsing::token_stream::TokenStream;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if let Ok(ch) = input.peek() {

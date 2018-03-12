@@ -3,7 +3,7 @@ use common::errors::*;
 use common::util::VecExt;
 
 use parsing::ast::*;
-use parsing::token_source::TokenStream;
+use parsing::token_stream::TokenStream;
 
 pub struct Parser<T: TokenStream> {
   lexer: T,
