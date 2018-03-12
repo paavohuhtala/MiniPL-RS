@@ -5,7 +5,7 @@ use common::types::BinaryOperator::*;
 
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
-use parsing::token_source::TokenSource;
+use parsing::token_source::TokenStream;
 
 pub fn add_op() -> Token {
   Token::Operator(BinaryOperator(Add))

@@ -3,7 +3,7 @@ use common::errors::*;
 
 use parsing::util::*;
 use parsing::char_stream::*;
-use parsing::token_source::TokenSource;
+use parsing::token_source::TokenStream;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if let Ok(ch) = input.peek() {
@@ -97,46 +97,88 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
   input.advance_until(|ch| !is_whitespace(ch));
 
   if input.reached_end() {
-    return Ok(TokenWithCtx{ offset: input.offset, token: Token::EndOfFile });
+    return Ok(TokenWithCtx {
+      offset: input.offset,
+      token: Token::EndOfFile,
+    });
   }
 
   let offset = input.offset;
 
-  // TODO: Check for tokens.
+  let with_ctx =
+    |token: Result<Token, LexerError>| token.map(|token| TokenWithCtx { offset, token });
+
   let first = input.peek()?;
 
   let token = match first {
-    ';' | '(' | ')' | '+' | '-' | '*' | '/' | '<' | '=' | '&' | '!' => {
+    ';' | '(' | ')' | '+' | '-' | '*' | '<' | '=' | '&' | '!' => {
       input.advance();
-      Ok(parse_single_char_token(first))
+      with_ctx(Ok(parse_single_char_token(first)))
     }
     ':' => {
       input.advance();
 
       if input.peek()? == '=' {
         input.advance();
-        Ok(Token::Assign)
+        with_ctx(Ok(Token::Assign))
       } else {
-        Ok(Token::Colon)
+        with_ctx(Ok(Token::Colon))
       }
-    },
+    }
     '.' => {
       input.advance();
       if input.peek()? == '.' {
         input.advance();
-        Ok(Token::Range)
+        with_ctx(Ok(Token::Range))
       } else {
-        Err(LexerError::UnknownLexeme)
+        with_ctx(Err(LexerError::UnknownLexeme))
       }
     }
-    '0'...'9' => read_number_literal(input),
-    '"' => read_string_literal(input),
-    _ => read_keyword_or_identifier(input),
+    '0'...'9' => with_ctx(read_number_literal(input)),
+    '"' => with_ctx(read_string_literal(input)),
+    '/' => {
+      input.advance();
+      let next = input.peek()?;
+
+      if next == '/' {
+        input.advance();
+        // If this is a single line comment, skip until the next newline
+        input.advance_until(|ch| ch == '\n');
+        // Recursively call self to get the next token
+        next_lexeme(input)
+      } else if next == '*' {
+        input.advance();
+
+        let mut prev = input.peek()?;
+        input.advance();
+
+        loop {
+          if input.reached_end() {
+            return Err(LexerError::UnterminatedComment);
+          }
+
+          let next = input.peek()?;
+          input.advance();
+
+          if prev == '*' && next == '/' {
+            break;
+          }
+
+          prev = next;
+        }
+
+        next_lexeme(input)
+      } else {
+        with_ctx(Ok(Token::Operator(Operator::BinaryOperator(
+          BinaryOperator::Div,
+        ))))
+      }
+    }
+    _ => with_ctx(read_keyword_or_identifier(input)),
   };
 
   println!("[{}]: Token: {:?}", offset, token);
-
-  token.map(|token| { TokenWithCtx { offset, token } })
+  token
 }
 
 pub struct BufferedLexer<'a> {
@@ -153,7 +195,7 @@ impl<'a> BufferedLexer<'a> {
   }
 }
 
-impl<'a> TokenSource for BufferedLexer<'a> {
+impl<'a> TokenStream for BufferedLexer<'a> {
   fn advance(&mut self) {
     if self.tokens.is_empty() {
       self.stream.advance();

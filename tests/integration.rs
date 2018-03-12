@@ -258,3 +258,56 @@ pub fn loop_variable_mutability() {
   let result = run_script(source, &mut io);
   assert_match!(result => Err(ExecutionError::TypeError(TypeError::AssignToImmutable(_i))));
 }
+
+#[test]
+pub fn comments() {
+  let source = r#"
+    // Line comment!
+    /*
+      Block comment!
+    */
+    assert 1 = 1;
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+}
+
+#[test]
+pub fn just_comments() {
+  let source = r#"
+    // Line comment!
+    /*Block comment!*/
+  "#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Ok(()));
+}
+
+#[test]
+pub fn invalid_block_comment_1() {
+  let source = r#"/*/"#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Err(
+    ExecutionError::ParserError(
+      ParserError::LexerError(LexerError::UnterminatedComment)
+    )
+  ));
+}
+
+#[test]
+pub fn invalid_block_comment_2() {
+  let source = r#"/* * * * * * / * / * / **"#;
+
+  let mut io = TestIo::new(&[]);
+  let result = run_script(source, &mut io);
+  assert_match!(result => Err(
+    ExecutionError::ParserError(
+      ParserError::LexerError(LexerError::UnterminatedComment)
+    )
+  ));
+}

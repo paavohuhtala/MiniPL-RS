@@ -2,7 +2,7 @@ use common::errors::*;
 use common::types::*;
 
 /// The interface for lexers.
-pub trait TokenSource {
+pub trait TokenStream {
   /// Advances to the next token if there are more tokens available.
   fn advance(&mut self);
 

@@ -3,13 +3,13 @@ use common::errors::*;
 use common::util::VecExt;
 
 use parsing::ast::*;
-use parsing::token_source::TokenSource;
+use parsing::token_source::TokenStream;
 
-pub struct Parser<T: TokenSource> {
+pub struct Parser<T: TokenStream> {
   lexer: T,
 }
 
-impl<T: TokenSource> Parser<T> {
+impl<T: TokenStream> Parser<T> {
   pub fn new(lexer: T) -> Parser<T> {
     Parser { lexer }
   }

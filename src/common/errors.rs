@@ -19,6 +19,7 @@ pub enum LexerError {
   UnterminatedStringLiteral,
   InvalidNumberLiteral,
   ReservedKeywordAsIdentifier,
+  UnterminatedComment,
   CharStreamError(CharStreamError),
   IOError(Error),
 }
