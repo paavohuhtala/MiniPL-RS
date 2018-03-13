@@ -133,21 +133,22 @@ impl<T: TokenStream> Parser<T> {
     let mut operators: Vec<OpStackItem> = Vec::new();
 
     // We don't need to access this from outside, so this function can be local.
-    fn create_node(operator: Operator, output: &mut Vec<Expression>) {
+    fn create_node(operator: Operator, output: &mut Vec<Expression>) -> Result<(), ParserError> {
       let node = match operator {
         Operator::BinaryOperator(op) => {
-          let right = output.pop().unwrap();
-          let left = output.pop().unwrap();
+          let right = output.pop().ok_or(ParserError::IncompleteExpression)?;
+          let left = output.pop().ok_or(ParserError::IncompleteExpression)?;
           let args = Box::new((left, right));
           Expression::BinaryOp(op, args)
         }
         Operator::UnaryOperator(op) => {
-          let inner = output.pop().unwrap();
+          let inner = output.pop().ok_or(ParserError::IncompleteExpression)?;
           Expression::UnaryOp(op, Box::new(inner))
         }
       };
 
       output.push(node);
+      Ok(())
     }
 
     loop {
@@ -169,19 +170,24 @@ impl<T: TokenStream> Parser<T> {
         }
         Token::RParen => {
           self.advance()?;
+          // If we encounter an error during the pop_while loop, we'll store the error in this.
+          let mut result = Ok(());
+
           operators.pop_while(|op_op_lparen| {
             match **op_op_lparen {
               OpStackItem::Operator(op) => {
-                create_node(op, &mut output);
-                true
+                result = create_node(op, &mut output);
+                // If we encountered an error, stop looping.
+                !result.is_err()
               }
               OpStackItem::LParen => {
-                // We return false (even though we are going to pop this later) in order
-                // to stop the iteration.
+                // We return false to stop the iteration.
                 false
               }
             }
           });
+
+          result?;
 
           // Pop the left parenthesis.
           operators.pop();
@@ -191,6 +197,8 @@ impl<T: TokenStream> Parser<T> {
         // handle them before adding this to the operator stack.
         Token::Operator(op) => {
           self.advance()?;
+          // If we encounter an error during the pop_while loop, we'll store the error in this.
+          let mut result = Ok(());
 
           // Go through the operator stack, and while there are operators with higher precedence
           // pop them from the stack and add them to the AST.
@@ -205,12 +213,16 @@ impl<T: TokenStream> Parser<T> {
                   false
                 } else {
                   // Mark this operator to be popped, and create the AST node for it.
-                  create_node(stack_op, &mut output);
-                  true
+                  result = create_node(stack_op, &mut output);
+                  // If we encountered an error, stop looping.
+                  !result.is_err()
                 }
               }
             }
           });
+
+          // If there was an error, return early.
+          result?;
 
           // Finally, push the operator to the stack.
           operators.push(OpStackItem::Operator(op));
@@ -223,7 +235,7 @@ impl<T: TokenStream> Parser<T> {
       match *op_or_lparen {
         OpStackItem::LParen => return Err(ParserError::MissingRParen),
         OpStackItem::Operator(op) => {
-          create_node(op, &mut output);
+          create_node(op, &mut output)?;
         }
       }
     }
@@ -300,8 +312,12 @@ impl<T: TokenStream> Parser<T> {
       let statement = self.parse_statement()?;
       let end = self.lexer.peek()?.offset - 1;
 
-      let with_ctx = StatementWithCtx { offset, length: end - offset,  statement };
-      println!("Statement: {:?}", with_ctx);
+      let with_ctx = StatementWithCtx {
+        offset,
+        length: end - offset,
+        statement,
+      };
+      println!("[{}] Statement: {:?}", with_ctx.offset, with_ctx.statement);
       statements.push(with_ctx);
 
       if self.lexer.reached_end() {
@@ -316,5 +332,19 @@ impl<T: TokenStream> Parser<T> {
     let program = self.parse_statement_list()?;
     self.expect_eq(&Token::EndOfFile)?;
     Ok(program)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use common::test_util::*;
+  use common::errors::ParserError::*;
+  use parsing::parser_test_util::*;
+  use parsing::ast_test_util::*;
+
+  #[test]
+  fn parse_invalid_binary_expr() {
+    let result = parse_expr("1 +");
+    assert_match!(result => Err(IncompleteExpression));
   }
 }

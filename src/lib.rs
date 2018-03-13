@@ -17,7 +17,7 @@ use runtime::*;
 #[derive(Debug)]
 pub enum ExecutionError {
   ParserError(ParserError),
-  TypeError(TypeError)
+  TypeError(TypeError),
 }
 
 impl From<ParserError> for ExecutionError {
@@ -36,17 +36,13 @@ impl From<TypeError> for ExecutionError {
 pub fn run_script<T: Io>(source: &str, io: &mut T) -> Result<(), ExecutionError> {
   // This is our compiler pipeline:
 
-  // First, we'll convert the string into a character vector, so that we can
-  // access individual characters in O(1) time.
-  let chars: Vec<char> = source.chars().collect();
-
-  // Then, we'll wrap the input into a stream-like type, to make it easier to use.
-  let tokens = CharStream::new(&chars);
+  // We'll wrap the source string into a stream-like type for easier use and O(1) indexing.
+  let tokens = CharStream::new(source);
 
   // The lexer splits the stream into tokens, and buffers them to allow peeking and backtracking.
   let lexer = BufferedLexer::new(tokens);
 
-  // The parser parses the token stream into an AST. 
+  // The parser parses the token stream into an AST.
   let mut parser = Parser::new(lexer);
   // ... which we'll use to obtain the program AST.
   let program = parser.parse_program()?;

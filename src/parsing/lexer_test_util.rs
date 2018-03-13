@@ -23,11 +23,13 @@ pub fn variable(s: &str) -> Token {
   Token::Identifier(s.to_string())
 }
 
-pub fn lex(input: &str) -> Vec<Token> {
-  let input_chars: Vec<char> = input.chars().collect();
-  let stream = CharStream::new(&input_chars);
-  let mut lexer = BufferedLexer::new(stream);
+pub fn create_lexer(input: &str) -> BufferedLexer {
+  let stream = CharStream::new(input);
+  BufferedLexer::new(stream)
+}
 
+pub fn lex(input: &str) -> Vec<Token> {
+  let mut lexer = create_lexer(input);
   let mut tokens = Vec::new();
 
   while !lexer.reached_end() {

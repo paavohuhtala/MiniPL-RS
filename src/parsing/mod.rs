@@ -9,4 +9,7 @@ pub mod ast;
 mod lexer_test_util;
 
 #[cfg(test)]
+mod parser_test_util;
+
+#[cfg(test)]
 pub mod ast_test_util;

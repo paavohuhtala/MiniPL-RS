@@ -1,20 +1,21 @@
-// Implements a Read+Seek -like interface over a string slice,
-// with support for backtracking.
-
+// Implements a Read+Seek -like interface over a character vector.
 use std::cmp::min;
 
 use common::errors::*;
 
 #[derive(Debug)]
-pub struct CharStream<'a> {
-  chars: &'a [char],
+pub struct CharStream {
+  chars: Vec<char>,
   pub offset: usize,
 }
 
-impl<'a> CharStream<'a> {
+impl CharStream {
   /// Creates a new char stream from a char slice.
-  pub fn new(chars: &'a [char]) -> CharStream<'a> {
-    CharStream { chars, offset: 0 }
+  pub fn new(src: &str) -> CharStream {
+    CharStream {
+      chars: src.chars().collect(),
+      offset: 0,
+    }
   }
 
   pub fn advance(&mut self) {
@@ -34,7 +35,7 @@ impl<'a> CharStream<'a> {
     self.offset >= self.chars.len()
   }
 
-  fn slice_at(&self, offset: usize, length: usize) -> &'a [char] {
+  fn slice_at(&self, offset: usize, length: usize) -> &[char] {
     &self.chars[offset..offset + length]
   }
 
@@ -50,7 +51,7 @@ impl<'a> CharStream<'a> {
     }
   }
 
-  pub fn take_until<F>(&mut self, pred: F) -> &'a [char]
+  pub fn take_until<F>(&mut self, pred: F) -> &[char]
   where
     F: Fn(char) -> bool,
   {

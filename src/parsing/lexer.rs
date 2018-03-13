@@ -14,7 +14,7 @@ fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
 
   input.advance();
 
-  let contents = input.take_until(|ch| ch == '"');
+  let contents = input.take_until(|ch| ch == '"').iter().collect();
 
   if input.reached_end() {
     return Err(LexerError::UnterminatedStringLiteral);
@@ -23,9 +23,7 @@ fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   // If take_until didn't reach EOF, we know this char is a double quote.
   input.advance();
 
-  let s = contents.iter().collect();
-
-  Ok(Token::Literal(LiteralValue::StringLiteral(s)))
+  Ok(Token::Literal(LiteralValue::StringLiteral(contents)))
 }
 
 static RESERVED_WORDS: &'static [&str] = &["print", "int", "bool", "string"];
@@ -177,17 +175,17 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
     _ => with_ctx(read_keyword_or_identifier(input)),
   };
 
-  println!("[{}]: Token: {:?}", offset, token);
+  println!("[{}] Token: {:?}", offset, token);
   token
 }
 
-pub struct BufferedLexer<'a> {
-  stream: CharStream<'a>,
+pub struct BufferedLexer {
+  stream: CharStream,
   tokens: Vec<TokenWithCtx>,
 }
 
-impl<'a> BufferedLexer<'a> {
-  pub fn new(stream: CharStream<'a>) -> BufferedLexer<'a> {
+impl BufferedLexer {
+  pub fn new(stream: CharStream) -> BufferedLexer {
     BufferedLexer {
       stream,
       tokens: Vec::new(),
@@ -195,7 +193,7 @@ impl<'a> BufferedLexer<'a> {
   }
 }
 
-impl<'a> TokenStream for BufferedLexer<'a> {
+impl TokenStream for BufferedLexer {
   fn advance(&mut self) {
     if self.tokens.is_empty() {
       self.stream.advance();
