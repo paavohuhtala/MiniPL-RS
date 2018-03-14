@@ -6,23 +6,36 @@ use parsing::char_stream::*;
 use parsing::token_stream::TokenStream;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
-  if let Ok(ch) = input.peek() {
-    if ch != '"' {
-      return Err(LexerError::UnknownLexeme);
+  if input.peek()? != '"' {
+    return Err(LexerError::UnknownLexeme);
+  }
+  input.advance();
+
+  let mut chars = Vec::new();
+
+  loop {
+    if input.reached_end() {
+      return Err(LexerError::UnterminatedStringLiteral);
     }
+
+    match input.next()? {
+      '\\' => {
+        let escape_char = match input.next()? {
+          '\\' => '\\',
+          '"' => '"',
+          'r' => '\r',
+          'n' => '\n',
+          't' => '\t',
+          other => return Err(LexerError::UnknownEscapeCode(other.to_string()))
+        };
+        chars.push(escape_char);
+      }
+      '"' => break,
+      other => chars.push(other)
+    };
   }
 
-  input.advance();
-
-  let contents = input.take_until(|ch| ch == '"').iter().collect();
-
-  if input.reached_end() {
-    return Err(LexerError::UnterminatedStringLiteral);
-  }
-
-  // If take_until didn't reach EOF, we know this char is a double quote.
-  input.advance();
-
+  let contents = chars.iter().collect();
   Ok(Token::Literal(LiteralValue::StringLiteral(contents)))
 }
 
@@ -230,12 +243,13 @@ impl TokenStream for BufferedLexer {
 
 #[cfg(test)]
 mod tests {
+  use common::errors::LexerError;
   use parsing::lexer_test_util::*;
   use common::types::Token::*;
 
   #[test]
   pub fn basic_expression() {
-    let tokens = lex("1 + 2 + x");
+    let tokens = lex("1 + 2 + x").expect("Should parse.");
     assert_eq!(
       tokens,
       [number(1), add_op(), number(2), add_op(), variable("x")]
@@ -244,7 +258,7 @@ mod tests {
 
   #[test]
   pub fn basic_expression_without_space() {
-    let tokens = lex("1+2+x");
+    let tokens = lex("1+2+x").expect("Should parse.");
     assert_eq!(
       tokens,
       [number(1), add_op(), number(2), add_op(), variable("x")]
@@ -253,7 +267,19 @@ mod tests {
 
   #[test]
   pub fn basic_lookahead() {
-    let tokens = lex(": = :=");
+    let tokens = lex(": = :=").expect("Should parse.");
     assert_eq!(tokens, [Colon, equal_op(), Assign]);
+  }
+
+  #[test]
+  pub fn string_escape_codes() {
+    let tokens = lex(r#""\r\n\\\"\t""#).expect("Should parse.");
+    assert_eq!(tokens, [string("\r\n\\\"\t")]);
+  }
+
+  #[test]
+  pub fn malformed_string() {
+    let result = lex(r#""Hello, world!; stuff"#);
+    assert_match!(result => Err(LexerError::UnterminatedStringLiteral));
   }
 }

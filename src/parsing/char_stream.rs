@@ -31,6 +31,12 @@ impl CharStream {
     }
   }
 
+  pub fn next(&mut self) -> Result<char, CharStreamError> {
+    let ch = self.peek()?;
+    self.advance();
+    Ok(ch)
+  }
+
   pub fn reached_end(&self) -> bool {
     self.offset >= self.chars.len()
   }

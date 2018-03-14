@@ -16,6 +16,7 @@ pub enum CharStreamError {
 pub enum LexerError {
   OutOfTokens,
   UnknownLexeme,
+  UnknownEscapeCode(String),
   UnterminatedStringLiteral,
   InvalidNumberLiteral,
   ReservedKeywordAsIdentifier,
