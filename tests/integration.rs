@@ -219,7 +219,7 @@ integration_tests! {
     var i : int;
     for i in 0 .. 10 do
       i := 100;
-    end for; 
+    end for;
   "#) {
     result Err(ExecutionError::TypeError(AssignToImmutable(_))),
     input [],

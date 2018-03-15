@@ -6,8 +6,11 @@ use parsing::ast::Expression::*;
 
 pub fn expr_of_type(t: TypeName) -> Expression {
   match t {
-    BoolType => BinaryOp(BinaryOperator::Equal, Box::new((expr_of_type(IntType), expr_of_type(IntType)))),
+    BoolType => BinaryOp(
+      BinaryOperator::Equal,
+      Box::new((expr_of_type(IntType), expr_of_type(IntType))),
+    ),
     IntType => Literal(IntLiteral(0)),
-    StringType => Literal(StringLiteral("".to_string()))
+    StringType => Literal(StringLiteral("".to_string())),
   }
 }

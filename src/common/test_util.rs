@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! assert_match {
   ($a:expr => $b:pat) => {

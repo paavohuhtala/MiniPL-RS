@@ -31,7 +31,7 @@ pub enum ParserError {
   UnexpectedToken { expected: TokenKind, was: TokenKind },
   LexerError(LexerError),
   MissingRParen,
-  IncompleteExpression
+  IncompleteExpression,
 }
 
 impl From<Error> for LexerError {

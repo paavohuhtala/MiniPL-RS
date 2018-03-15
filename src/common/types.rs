@@ -65,13 +65,13 @@ pub enum BinaryOperator {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum UnaryOperator {
-  Not
+  Not,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Operator {
   BinaryOperator(BinaryOperator),
-  UnaryOperator(UnaryOperator)
+  UnaryOperator(UnaryOperator),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -91,8 +91,8 @@ impl Operator {
       BinaryOperator(op) => match op {
         Mul | Div => 2,
         Add | Sub | And => 1,
-        LessThan | Equal => 0
-      }
+        LessThan | Equal => 0,
+      },
     }
   }
 
@@ -100,7 +100,7 @@ impl Operator {
     use self::Operator::*;
     match self {
       UnaryOperator(_) => Arity::Unary,
-      BinaryOperator(_) => Arity::Binary
+      BinaryOperator(_) => Arity::Binary,
     }
   }
 }
@@ -131,7 +131,7 @@ pub enum Token {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TokenWithCtx {
   pub offset: usize,
-  pub token: Token
+  pub token: Token,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]

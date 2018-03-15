@@ -22,7 +22,7 @@ pub fn number(i: i32) -> Token {
 
 pub fn string(s: &str) -> Token {
   Token::Literal(LiteralValue::StringLiteral(s.to_string()))
-} 
+}
 
 pub fn variable(s: &str) -> Token {
   Token::Identifier(s.to_string())

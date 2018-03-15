@@ -33,7 +33,7 @@ pub enum Statement {
 pub struct StatementWithCtx {
   pub offset: usize,
   pub length: usize,
-  pub statement: Statement
+  pub statement: Statement,
 }
 
 pub type Program<'a> = &'a [StatementWithCtx];

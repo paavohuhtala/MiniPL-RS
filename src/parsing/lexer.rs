@@ -26,12 +26,12 @@ fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
           'r' => '\r',
           'n' => '\n',
           't' => '\t',
-          other => return Err(LexerError::UnknownEscapeCode(other.to_string()))
+          other => return Err(LexerError::UnknownEscapeCode(other.to_string())),
         };
         chars.push(escape_char);
       }
       '"' => break,
-      other => chars.push(other)
+      other => chars.push(other),
     };
   }
 
@@ -194,14 +194,14 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
 
 pub struct BufferedLexer {
   stream: CharStream,
-  token: Option<TokenWithCtx>
+  token: Option<TokenWithCtx>,
 }
 
 impl BufferedLexer {
   pub fn new(stream: CharStream) -> BufferedLexer {
     BufferedLexer {
       stream,
-      token: None
+      token: None,
     }
   }
 }

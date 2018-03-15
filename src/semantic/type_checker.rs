@@ -246,7 +246,9 @@ mod tests {
 
           for a in &[IntType, StringType, BoolType] {
             for b in &[IntType, StringType, BoolType] {
-              let result = ctx.evaluate_expression_type(&ast_test_util::$op(expr_of_type(*a), expr_of_type(*b)));
+              let result = ctx.evaluate_expression_type(
+                &ast_test_util::$op(expr_of_type(*a), expr_of_type(*b))
+              );
               $(
                 if *a == type_shorthand!($a_ok) && *b == type_shorthand!($b_ok) {
                   assert_eq!(
