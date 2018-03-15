@@ -319,10 +319,6 @@ impl<T: TokenStream> Parser<T> {
       };
       println!("[{}] Statement: {:?}", with_ctx.offset, with_ctx.statement);
       statements.push(with_ctx);
-
-      if self.lexer.reached_end() {
-        break;
-      }
     }
 
     Ok(statements)

@@ -194,50 +194,49 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
 
 pub struct BufferedLexer {
   stream: CharStream,
-  tokens: Vec<TokenWithCtx>,
+  token: Option<TokenWithCtx>
 }
 
 impl BufferedLexer {
   pub fn new(stream: CharStream) -> BufferedLexer {
     BufferedLexer {
       stream,
-      tokens: Vec::new(),
+      token: None
     }
   }
 }
 
 impl TokenStream for BufferedLexer {
+  /// If the buffer contains a token, remove it. Otherwise advance the stream.
   fn advance(&mut self) {
-    if self.tokens.is_empty() {
+    if self.token.is_none() {
       self.stream.advance();
     } else {
-      self.tokens.pop();
+      self.token = None;
     }
   }
 
+  /// Returns true if the buffer contains a token or the stream has characters remaining.
   fn reached_end(&self) -> bool {
-    self.tokens.is_empty() && self.stream.reached_end()
+    self.token.is_none() && self.stream.reached_end()
   }
 
+  /// Tries to get the next token, either from the buffer or from the character stream.
   fn peek(&mut self) -> Result<TokenWithCtx, LexerError> {
-    if self.tokens.is_empty() {
-      let next = next_lexeme(&mut self.stream)?;
-      self.tokens.push(next.clone());
-      Ok(next)
+    if self.token.is_some() {
+      Ok(self.token.clone().unwrap())
     } else {
-      match self.tokens.last() {
-        Some(token) => Ok(token.clone()),
-        None => Err(LexerError::OutOfTokens),
-      }
+      let next = next_lexeme(&mut self.stream)?;
+      self.token = Some(next.clone());
+      Ok(next)
     }
   }
 
+  /// Same as `peek()`, followed by `advance()`.
   fn next(&mut self) -> Result<TokenWithCtx, LexerError> {
-    if self.tokens.is_empty() {
-      next_lexeme(&mut self.stream)
-    } else {
-      Ok(self.tokens.pop().expect("This should never happen."))
-    }
+    let token = self.peek()?;
+    self.advance();
+    Ok(token)
   }
 }
 
