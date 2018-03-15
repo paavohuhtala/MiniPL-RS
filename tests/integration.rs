@@ -63,7 +63,7 @@ macro_rules! integration_tests {
 }
 
 use miniplrs::ExecutionError;
-use miniplrs::common::types::TokenKind::*;
+use miniplrs::parsing::token::TokenKind::*;
 use miniplrs::common::errors::ParserError::*;
 use miniplrs::common::errors::LexerError::*;
 use miniplrs::semantic::type_checker::TypeError::*;

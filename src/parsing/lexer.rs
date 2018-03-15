@@ -1,6 +1,7 @@
 use common::types::*;
 use common::errors::*;
 
+use parsing::token::*;
 use parsing::util::*;
 use parsing::char_stream::*;
 use parsing::token_stream::TokenStream;
@@ -72,10 +73,10 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
 }
 
 fn parse_single_char_token(ch: char) -> Token {
-  use common::types::Token::*;
   use common::types::Operator::*;
   use common::types::BinaryOperator::*;
   use common::types::UnaryOperator::*;
+  use parsing::token::Token::*;
 
   match ch {
     ';' => Semicolon,
@@ -244,7 +245,7 @@ impl TokenStream for BufferedLexer {
 mod tests {
   use common::errors::LexerError;
   use parsing::lexer_test_util::*;
-  use common::types::Token::*;
+  use parsing::token::Token::*;
 
   #[test]
   pub fn basic_expression() {

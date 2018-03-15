@@ -2,6 +2,7 @@ use common::types::*;
 use common::errors::*;
 use common::util::VecExt;
 
+use parsing::token::*;
 use parsing::ast::*;
 use parsing::token_stream::TokenStream;
 

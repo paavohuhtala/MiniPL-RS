@@ -1,5 +1,5 @@
 use common::errors::*;
-use common::types::*;
+use parsing::token::*;
 
 /// The interface for lexers.
 pub trait TokenStream {

@@ -4,6 +4,7 @@ use common::types::Operator::*;
 use common::types::BinaryOperator::*;
 use common::errors::LexerError;
 
+use parsing::token::Token;
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
 use parsing::token_stream::TokenStream;
