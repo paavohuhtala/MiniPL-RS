@@ -1,6 +1,5 @@
 use std::io::Error;
 
-use common::types::*;
 use parsing::token::*;
 
 // The error types form a hierarchy.

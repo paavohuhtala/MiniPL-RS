@@ -40,8 +40,6 @@ fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   Ok(Token::Literal(LiteralValue::StringLiteral(contents)))
 }
 
-static RESERVED_WORDS: &'static [&str] = &["print", "int", "bool", "string"];
-
 fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerError> {
   let chars = input.take_until(|c| !is_valid_in_identifier(c));
   // This is just string comparison, but because string != char sequence, we
@@ -61,9 +59,7 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
     _ => {
       let name: String = chars.iter().collect();
 
-      if RESERVED_WORDS.contains(&name.as_str()) {
-        Err(LexerError::ReservedKeywordAsIdentifier)
-      } else if !is_valid_identifier(&name) {
+      if !is_valid_identifier(&name) {
         Err(LexerError::UnknownLexeme)
       } else {
         Ok(Token::Identifier(name))

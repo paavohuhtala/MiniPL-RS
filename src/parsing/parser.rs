@@ -334,14 +334,25 @@ impl<T: TokenStream> Parser<T> {
 
 #[cfg(test)]
 mod tests {
-  use common::test_util::*;
   use common::errors::ParserError::*;
   use parsing::parser_test_util::*;
-  use parsing::ast_test_util::*;
+  use parsing::token::TokenKind::*;
 
   #[test]
   fn parse_invalid_binary_expr() {
     let result = parse_expr("1 +");
     assert_match!(result => Err(IncompleteExpression));
+  }
+
+  #[test]
+  fn reserved_keyword_var() {
+    let result = parse_stmnt("var var : int := 10;");
+    assert_match!(result => Err(UnexpectedToken { expected: _, was: VarK }));
+  }
+
+  #[test]
+  fn reserved_keyword_int() {
+    let result = parse_stmnt("var int : int := 10;");
+    assert_match!(result => Err(UnexpectedToken { expected: _, was: TypeK }));
   }
 }
