@@ -258,4 +258,35 @@ integration_tests! {
     input [],
     output []
   }
+
+  example_program_1(r#"
+    var X : int := 4 + (6 * 2);
+    print X;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["16"]
+  }
+
+  example_program_2(r#"
+    var nTimes : int := 0;
+    print "How many times?"; 
+    read nTimes;
+    var x : int;
+    for x in 0..nTimes-1 do 
+        print x;
+        print " : Hello, World!\n";
+    end for;
+    assert (x = nTimes);
+  "#) {
+    result Ok(_),
+    input ["3"],
+    output [
+      "How many times?",
+      "0", " : Hello, World!\n",
+      "1", " : Hello, World!\n",
+      "2", " : Hello, World!\n",
+      "ASSERTION FAILED: BinaryOp(Equal, (Variable(\"x\"), Variable(\"nTimes\")))"
+    ]
+  }
 }

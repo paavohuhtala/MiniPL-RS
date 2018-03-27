@@ -2,6 +2,7 @@
 
 #[macro_use]
 pub mod common;
+pub mod diagnostics;
 pub mod parsing;
 pub mod semantic;
 pub mod runtime;
@@ -13,6 +14,8 @@ use parsing::parser::Parser;
 use common::errors::*;
 use semantic::type_checker::*;
 use runtime::*;
+
+use diagnostics::file_context::*;
 
 #[derive(Debug)]
 pub enum ExecutionError {
@@ -34,6 +37,8 @@ impl From<TypeError> for ExecutionError {
 
 /// Run a script using the given IO handler (e.g `ConsoleIo`).
 pub fn run_script<T: Io>(source: &str, io: &mut T) -> Result<(), ExecutionError> {
+  let diagnostics_source = FileContextSource::from_str(source, None);
+
   // This is our compiler pipeline:
 
   // We'll wrap the source string into a stream-like type for easier use and O(1) indexing.
