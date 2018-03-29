@@ -34,13 +34,6 @@ impl FileContextSource {
     for (row_index, &(first_index, ref row_content)) in self.lines.iter().enumerate() {
       let len = row_content.len();
 
-      println!(
-        "{} should be in inclusive range [{}, {}]",
-        offset,
-        first_index,
-        first_index + len
-      );
-
       if offset >= first_index && offset <= first_index + len {
         return Some(FilePosition {
           offset,
@@ -72,10 +65,24 @@ impl FileContextSource {
       .decode_offset(range.end)
       .expect("This should be a valid offset.");
 
-    println!("Range: {:?}, start: {:?}, end: {:?}", range, start, end);
-
     (start.row..end.row + 1)
       .map(|x| self.get_line(x).expect("Should be a valid row."))
       .collect()
+  }
+
+  pub fn get_source_quote(&self, range: &Range<usize>) -> String {
+    let source_lines = self.get_range_lines(range);
+
+    let pos = self
+      .decode_offset(range.start)
+      .expect("Should be a valid offset.");
+
+    source_lines
+      .iter()
+      .fold((String::new(), pos.row), |(acc, row), x| {
+        let line_number = format!("[{:4}]  ", row);
+        (acc + &line_number + x + "\n", row + 1)
+      })
+      .0
   }
 }

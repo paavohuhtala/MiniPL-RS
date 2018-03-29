@@ -1,5 +1,5 @@
 // Print statement!
-print "Hello, world!";
+print "Hello, world!\n";
 
 // A few assignments
 var a : int := 10;

@@ -134,24 +134,10 @@ impl<'a, T: Io> Interpreter<'a, T> {
         match value {
           Value::BoolV(true) => return,
           Value::BoolV(false) => {
-            let source_lines = self.ctx.get_range_lines(&statement.source_position);
-
-            let pos = self
-              .ctx
-              .decode_offset(statement.source_position.start)
-              .expect("Should be a valid offset.");
-
-            let assertion_source = source_lines
-              .iter()
-              .fold((String::new(), pos.row), |(acc, row), x| {
-                let line_number = format!("[{:4}]  ", row);
-                (acc + &line_number + x + "\n", row + 1)
-              })
-              .0;
-
+            let source_quote = self.ctx.get_source_quote(&statement.source_position);
             self
               .io
-              .write(&format!("ASSERTION FAILED:\n{}", assertion_source))
+              .write(&format!("ASSERTION FAILED:\n{}", source_quote))
           }
           _ => panic!("Type checker will prevent this."),
         }
