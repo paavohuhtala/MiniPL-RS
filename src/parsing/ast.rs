@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use common::types::*;
 
 #[derive(Debug)]
@@ -31,8 +33,7 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub struct StatementWithCtx {
-  pub offset: usize,
-  pub length: usize,
+  pub source_position: Range<usize>,
   pub statement: Statement,
 }
 

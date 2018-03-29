@@ -9,6 +9,9 @@ pub trait TokenStream {
   /// Returns true if there are no more tokens available.
   fn reached_end(&self) -> bool;
 
+  /// Returns the offset in the input file.
+  fn offset(&self) -> usize;
+
   /// Tries to read the next token.
   fn peek(&mut self) -> Result<TokenWithCtx, LexerError>;
 

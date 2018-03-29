@@ -4,16 +4,16 @@
 pub mod common;
 pub mod diagnostics;
 pub mod parsing;
-pub mod semantic;
 pub mod runtime;
+pub mod semantic;
 
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
 use parsing::parser::Parser;
 
 use common::errors::*;
-use semantic::type_checker::*;
 use runtime::*;
+use semantic::type_checker::*;
 
 use diagnostics::file_context::*;
 
@@ -56,7 +56,7 @@ pub fn run_script<T: Io>(source: &str, io: &mut T) -> Result<(), ExecutionError>
   type_check(&program)?;
 
   // If type checking was succesful, create a new interpreter and run the program.
-  let mut interpreter = Interpreter::new(io);
+  let mut interpreter = Interpreter::new(io, &diagnostics_source);
   interpreter.execute(&program);
 
   Ok(())

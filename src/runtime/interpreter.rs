@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use common::types::{TypeName, Value};
 
+use diagnostics::file_context::FileContextSource;
+
 use parsing::ast::*;
 
 use runtime::io::Io;
@@ -13,13 +15,15 @@ struct Variable {
 
 pub struct Interpreter<'a, T: Io + 'a> {
   variables: HashMap<String, Variable>,
+  ctx: &'a FileContextSource,
   io: &'a mut T,
 }
 
 impl<'a, T: Io> Interpreter<'a, T> {
-  pub fn new(io: &'a mut T) -> Interpreter<'a, T> {
+  pub fn new(io: &'a mut T, ctx: &'a FileContextSource) -> Interpreter<'a, T> {
     Interpreter {
       io,
+      ctx,
       variables: HashMap::new(),
     }
   }
@@ -82,8 +86,8 @@ impl<'a, T: Io> Interpreter<'a, T> {
     }
   }
 
-  fn execute_statement(&mut self, statement: &Statement) {
-    match *statement {
+  fn execute_statement(&mut self, statement: &StatementWithCtx) {
+    match statement.statement {
       // We trust the type checker, so we don't have to check the type at runtime.
       Statement::Declare {
         ref name,
@@ -103,7 +107,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
       }
       Statement::Print(ref expr) => {
         let value = self.evaluate_expression(expr);
-        self.io.write_line(&value.to_string());
+        self.io.write(&value.to_string());
       }
       Statement::Read(ref name) => {
         let str_value = self.io.read_line();
@@ -129,7 +133,26 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let value = self.evaluate_expression(expr);
         match value {
           Value::BoolV(true) => return,
-          Value::BoolV(false) => self.io.write_line(&format!("ASSERTION FAILED: {:?}", expr)),
+          Value::BoolV(false) => {
+            let source_lines = self.ctx.get_range_lines(&statement.source_position);
+
+            let pos = self
+              .ctx
+              .decode_offset(statement.source_position.start)
+              .expect("Should be a valid offset.");
+
+            let assertion_source = source_lines
+              .iter()
+              .fold((String::new(), pos.row), |(acc, row), x| {
+                let line_number = format!("[{:4}]  ", row);
+                (acc + &line_number + x + "\n", row + 1)
+              })
+              .0;
+
+            self
+              .io
+              .write(&format!("ASSERTION FAILED:\n{}", assertion_source))
+          }
           _ => panic!("Type checker will prevent this."),
         }
       }
@@ -147,7 +170,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
             self.assign(variable, Value::IntV(i));
 
             for statement in run {
-              self.execute_statement(&statement.statement);
+              self.execute_statement(&statement);
             }
           },
           _ => panic!("Type checker will prevent this"),
@@ -158,7 +181,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
 
   pub fn execute(&mut self, program: Program) {
     for statement in program {
-      self.execute_statement(&statement.statement);
+      self.execute_statement(&statement);
     }
   }
 }

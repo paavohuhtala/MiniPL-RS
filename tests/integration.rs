@@ -18,7 +18,7 @@ impl TestIo {
 }
 
 impl Io for TestIo {
-  fn write_line(&mut self, line: &str) {
+  fn write(&mut self, line: &str) {
     self.output.push(line.to_string());
   }
 
@@ -272,17 +272,17 @@ integration_tests! {
     output ["16"]
   }
 
-  example_program_2(r#"
-    var nTimes : int := 0;
-    print "How many times?";
-    read nTimes;
-    var x : int;
-    for x in 0..nTimes-1 do
-        print x;
-        print " : Hello, World!\n";
-    end for;
-    assert (x = nTimes);
-  "#) {
+  example_program_2(
+r#"var nTimes : int := 0;
+print "How many times?";
+read nTimes;
+var x : int;
+for x in 0..nTimes-1 do
+    print x;
+    print " : Hello, World!\n";
+end for;
+assert (x = nTimes);
+"#) {
     result Ok(_),
     input ["3"],
     output [
@@ -290,7 +290,7 @@ integration_tests! {
       "0", " : Hello, World!\n",
       "1", " : Hello, World!\n",
       "2", " : Hello, World!\n",
-      "ASSERTION FAILED: BinaryOp(Equal, (Variable(\"x\"), Variable(\"nTimes\")))"
+      "ASSERTION FAILED:\n[   9]  assert (x = nTimes);\n"
     ]
   }
 

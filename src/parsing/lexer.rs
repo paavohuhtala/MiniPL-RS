@@ -1,10 +1,10 @@
-use common::types::*;
 use common::errors::*;
+use common::types::*;
 
-use parsing::token::*;
-use parsing::util::*;
 use parsing::char_stream::*;
+use parsing::token::*;
 use parsing::token_stream::TokenStream;
+use parsing::util::*;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if input.peek()? != '"' {
@@ -69,8 +69,8 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
 }
 
 fn parse_single_char_token(ch: char) -> Token {
-  use common::types::Operator::*;
   use common::types::BinaryOperator::*;
+  use common::types::Operator::*;
   use common::types::UnaryOperator::*;
   use parsing::token::Token::*;
 
@@ -216,6 +216,13 @@ impl TokenStream for BufferedLexer {
   /// Returns true if the buffer contains a token or the stream has characters remaining.
   fn reached_end(&self) -> bool {
     self.token.is_none() && self.stream.reached_end()
+  }
+
+  fn offset(&self) -> usize {
+    match self.token {
+      Some(ref token) => token.offset,
+      _ => self.stream.offset,
+    }
   }
 
   /// Tries to get the next token, either from the buffer or from the character stream.

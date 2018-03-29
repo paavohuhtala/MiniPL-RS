@@ -1,3 +1,4 @@
+use std::ops::Range;
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
@@ -32,7 +33,15 @@ impl FileContextSource {
   pub fn decode_offset(&self, offset: usize) -> Option<FilePosition> {
     for (row_index, &(first_index, ref row_content)) in self.lines.iter().enumerate() {
       let len = row_content.len();
-      if offset >= first_index && offset < first_index + len {
+
+      println!(
+        "{} should be in inclusive range [{}, {}]",
+        offset,
+        first_index,
+        first_index + len
+      );
+
+      if offset >= first_index && offset <= first_index + len {
         return Some(FilePosition {
           offset,
           row: row_index + 1,
@@ -47,10 +56,26 @@ impl FileContextSource {
   // Terminology:
   // A row is a 1-based index into the file
   // A line is a string, containing the contents of a particular row.
-  pub fn get_line<'a>(&self, row: usize) -> Option<Rc<String>> {
+  pub fn get_line(&self, row: usize) -> Option<Rc<String>> {
     self
       .lines
       .get(row - 1)
       .map(|&(_, ref content_pointer)| content_pointer.clone())
+  }
+
+  pub fn get_range_lines(&self, range: &Range<usize>) -> Vec<Rc<String>> {
+    let start = self
+      .decode_offset(range.start)
+      .expect("This should be a valid offset.");
+
+    let end = self
+      .decode_offset(range.end)
+      .expect("This should be a valid offset.");
+
+    println!("Range: {:?}, start: {:?}, end: {:?}", range, start, end);
+
+    (start.row..end.row + 1)
+      .map(|x| self.get_line(x).expect("Should be a valid row."))
+      .collect()
   }
 }

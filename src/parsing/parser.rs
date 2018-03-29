@@ -1,9 +1,9 @@
-use common::types::*;
 use common::errors::*;
+use common::types::*;
 use common::util::VecExt;
 
-use parsing::token::*;
 use parsing::ast::*;
+use parsing::token::*;
 use parsing::token_stream::TokenStream;
 
 pub struct Parser<T: TokenStream> {
@@ -309,16 +309,18 @@ impl<T: TokenStream> Parser<T> {
         break;
       }
 
-      let offset = next.offset;
+      let start = self.lexer.offset();
       let statement = self.parse_statement()?;
-      let end = self.lexer.peek()?.offset - 1;
+      let end = self.lexer.offset();
 
       let with_ctx = StatementWithCtx {
-        offset,
-        length: end - offset,
+        source_position: (start..end),
         statement,
       };
-      println!("[{}] Statement: {:?}", with_ctx.offset, with_ctx.statement);
+      println!(
+        "[{:?}] Statement: {:?}",
+        with_ctx.source_position, with_ctx.statement
+      );
       statements.push(with_ctx);
     }
 

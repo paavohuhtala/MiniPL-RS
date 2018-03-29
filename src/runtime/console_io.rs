@@ -18,7 +18,7 @@ impl Io for ConsoleIo {
     line
   }
 
-  fn write_line(&mut self, s: &str) {
-    println!("{}", s);
+  fn write(&mut self, s: &str) {
+    print!("{}", s);
   }
 }
