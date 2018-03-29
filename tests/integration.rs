@@ -270,10 +270,10 @@ integration_tests! {
 
   example_program_2(r#"
     var nTimes : int := 0;
-    print "How many times?"; 
+    print "How many times?";
     read nTimes;
     var x : int;
-    for x in 0..nTimes-1 do 
+    for x in 0..nTimes-1 do
         print x;
         print " : Hello, World!\n";
     end for;
@@ -288,5 +288,17 @@ integration_tests! {
       "2", " : Hello, World!\n",
       "ASSERTION FAILED: BinaryOp(Equal, (Variable(\"x\"), Variable(\"nTimes\")))"
     ]
+  }
+
+  print_uninitialised_variable(r#"
+    var a : int;
+    print a;
+
+    var b : string;
+    print b;
+  "#) {
+    result Ok(_),
+    input [],
+    output ["", ""]
   }
 }
