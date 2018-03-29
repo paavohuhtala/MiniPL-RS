@@ -22,6 +22,16 @@ pub enum Value {
   BoolV(bool),
 }
 
+impl TypeName {
+  pub fn get_default_value(self) -> Value {
+    match self {
+      TypeName::IntType => Value::IntV(0),
+      TypeName::StringType => Value::StringV("".to_string()),
+      TypeName::BoolType => Value::BoolV(false),
+    }
+  }
+}
+
 impl Value {
   pub fn get_type(&self) -> TypeName {
     match *self {

@@ -8,7 +8,7 @@ use runtime::io::Io;
 
 struct Variable {
   type_of: TypeName,
-  value: Option<Value>,
+  value: Value,
 }
 
 pub struct Interpreter<'a, T: Io + 'a> {
@@ -24,7 +24,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
     }
   }
 
-  fn declare(&mut self, identifier: &str, type_of: TypeName, value: Option<Value>) {
+  fn declare(&mut self, identifier: &str, type_of: TypeName, value: Value) {
     self
       .variables
       .insert(identifier.to_string(), Variable { type_of, value });
@@ -32,7 +32,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
 
   fn assign(&mut self, identifier: &str, value: Value) {
     let variable = self.variables.get_mut(identifier).unwrap();
-    variable.value = Some(value);
+    variable.value = value;
   }
 
   fn evaluate_binary_expression(&self, params: &(Expression, Expression)) -> (Value, Value) {
@@ -42,8 +42,8 @@ impl<'a, T: Io> Interpreter<'a, T> {
   }
 
   fn evaluate_expression(&self, expression: &Expression) -> Value {
-    use common::types::UnaryOperator::*;
     use common::types::BinaryOperator::*;
+    use common::types::UnaryOperator::*;
     use common::types::Value::*;
     use parsing::ast::Expression::*;
 
@@ -55,12 +55,8 @@ impl<'a, T: Io> Interpreter<'a, T> {
           .variables
           .get(variable)
           .as_ref()
-          .expect("Type checker will prevent the use of undecleared variables.");
-        var
-          .value
-          .as_ref()
-          .expect("Type checker will prevent the use of uninitialised variables.")
-          .clone()
+          .expect("Type checker will prevent the use of undeclared variables.");
+        var.value.clone()
       }
       BinaryOp(ref op, ref params) => {
         let (left, right) = self.evaluate_binary_expression(params);
@@ -95,7 +91,10 @@ impl<'a, T: Io> Interpreter<'a, T> {
         ref initial,
         ..
       } => {
-        let initial_value = initial.as_ref().map(|expr| self.evaluate_expression(expr));
+        let initial_value = initial
+          .as_ref()
+          .map(|expr| self.evaluate_expression(expr))
+          .unwrap_or(type_of.get_default_value());
         self.declare(name, *type_of, initial_value);
       }
       Statement::Assign(ref name, ref value) => {

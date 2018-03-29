@@ -1,7 +1,7 @@
 extern crate miniplrs;
 
-use miniplrs::runtime::Io;
 use miniplrs::run_script;
+use miniplrs::runtime::Io;
 
 struct TestIo {
   input: Vec<String>,
@@ -32,10 +32,14 @@ macro_rules! assert_match {
     match $a {
       $b => (),
       _ => {
-        panic!("assertion failed: expected pattern {}, was {:?}", stringify!($b), $a);
+        panic!(
+          "assertion failed: expected pattern {}, was {:?}",
+          stringify!($b),
+          $a
+        );
       }
     }
-  }
+  };
 }
 
 macro_rules! integration_tests {
@@ -63,9 +67,9 @@ macro_rules! integration_tests {
 }
 
 use miniplrs::ExecutionError;
-use miniplrs::parsing::token::TokenKind::*;
-use miniplrs::common::errors::ParserError::*;
 use miniplrs::common::errors::LexerError::*;
+use miniplrs::common::errors::ParserError::*;
+use miniplrs::parsing::token::TokenKind::*;
 use miniplrs::semantic::type_checker::TypeError::*;
 
 integration_tests! {
@@ -299,6 +303,6 @@ integration_tests! {
   "#) {
     result Ok(_),
     input [],
-    output ["", ""]
+    output ["0", ""]
   }
 }
