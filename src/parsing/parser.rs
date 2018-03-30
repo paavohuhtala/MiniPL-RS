@@ -43,7 +43,7 @@ impl<T: TokenStream> Parser<T> {
     }
   }
 
-  fn expect_type(&mut self) -> Result<TypeName, ParserError> {
+  fn expect_type_name(&mut self) -> Result<TypeName, ParserError> {
     let token = self.lexer.peek()?.token;
 
     match token {
@@ -90,7 +90,7 @@ impl<T: TokenStream> Parser<T> {
 
     self.expect_eq(&Token::Colon)?;
 
-    let type_of = self.expect_type()?;
+    let type_of = self.expect_type_name()?;
 
     let initial_value = if self.lexer.peek()?.token == Token::Assign {
       self.advance()?;

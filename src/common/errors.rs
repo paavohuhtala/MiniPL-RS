@@ -1,5 +1,4 @@
 use std::io::Error;
-use std::fmt::Display;
 
 use diagnostics::file_context::FileContextSource;
 use parsing::token::*;

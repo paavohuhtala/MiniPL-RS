@@ -100,6 +100,7 @@ fn read_number_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   }
 }
 
+/// Parses the next token from the input stream.
 fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
   // Skip whitespace
   input.advance_until(|ch| !is_whitespace(ch));
@@ -218,6 +219,8 @@ impl TokenStream for BufferedLexer {
     self.token.is_none() && self.stream.reached_end()
   }
 
+  /// Returns the offset in the input file.
+  /// If there's a buffered token, returns the offset for it.
   fn offset(&self) -> usize {
     match self.token {
       Some(ref token) => token.offset,
@@ -284,5 +287,17 @@ mod tests {
   pub fn malformed_string() {
     let result = lex(r#""Hello, world!; stuff"#);
     assert_match!(result => Err(LexerError::UnterminatedStringLiteral));
+  }
+
+  #[test]
+  pub fn valid_identifiers() {
+    let result = lex("Aa aA a_a A_A A3 a3 aa3bb");
+    assert_match!(result => Ok(_));
+  }
+
+  #[test]
+  pub fn number_and_identifier_is_two_tokens() {
+    let result = lex("3a").expect("Should parse");
+    assert_eq!(result, [number(3), variable("a")]);
   }
 }
