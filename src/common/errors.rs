@@ -43,7 +43,7 @@ pub enum CharStreamError {
 #[derive(Debug)]
 pub enum LexerError {
   OutOfTokens,
-  UnknownLexeme,
+  UnknownToken,
   UnknownEscapeCode(String),
   UnterminatedStringLiteral,
   InvalidNumberLiteral,

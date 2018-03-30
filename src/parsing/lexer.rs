@@ -8,7 +8,7 @@ use parsing::util::*;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
   if input.peek()? != '"' {
-    return Err(LexerError::UnknownLexeme);
+    return Err(LexerError::UnknownToken);
   }
   input.advance();
 
@@ -60,7 +60,7 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
       let name: String = chars.iter().collect();
 
       if !is_valid_identifier(&name) {
-        Err(LexerError::UnknownLexeme)
+        Err(LexerError::UnknownToken)
       } else {
         Ok(Token::Identifier(name))
       }
@@ -101,7 +101,7 @@ fn read_number_literal(input: &mut CharStream) -> Result<Token, LexerError> {
 }
 
 /// Parses the next token from the input stream.
-fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
+fn next_token(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
   // Skip whitespace
   input.advance_until(|ch| !is_whitespace(ch));
 
@@ -140,7 +140,7 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
         input.advance();
         with_ctx(Ok(Token::Range))
       } else {
-        with_ctx(Err(LexerError::UnknownLexeme))
+        with_ctx(Err(LexerError::UnknownToken))
       }
     }
     '0'...'9' => with_ctx(read_number_literal(input)),
@@ -154,7 +154,7 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
         // If this is a single line comment, skip until the next newline
         input.advance_until(|ch| ch == '\n');
         // Recursively call self to get the next token
-        next_lexeme(input)
+        next_token(input)
       } else if next == '*' {
         input.advance();
 
@@ -176,7 +176,7 @@ fn next_lexeme(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
           prev = next;
         }
 
-        next_lexeme(input)
+        next_token(input)
       } else {
         with_ctx(Ok(Token::Operator(Operator::BinaryOperator(
           BinaryOperator::Div,
@@ -233,7 +233,7 @@ impl TokenStream for BufferedLexer {
     if self.token.is_some() {
       Ok(self.token.clone().unwrap())
     } else {
-      let next = next_lexeme(&mut self.stream)?;
+      let next = next_token(&mut self.stream)?;
       self.token = Some(next.clone());
       Ok(next)
     }
