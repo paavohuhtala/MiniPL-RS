@@ -1,4 +1,5 @@
 #![feature(slice_patterns)]
+#![feature(try_trait)]
 
 use std::rc::Rc;
 

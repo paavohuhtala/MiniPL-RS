@@ -35,7 +35,7 @@ impl Logger for NullLogger {
     LogLevel::Normal
   }
 
-  fn write_line(&self, s: &str) {}
+  fn write_line(&self, _s: &str) {}
 }
 
 #[macro_export]

@@ -253,6 +253,23 @@ impl TokenStream for BufferedLexer {
   }
 }
 
+impl TryRecover for BufferedLexer {
+  // Advance input until we find a valid token.
+  fn try_recover(&mut self) -> bool {
+    loop {
+      if self.reached_end() {
+        return false;
+      }
+
+      if let Ok(_) = self.peek() {
+        return true;
+      }
+
+      self.stream.advance();
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use common::errors::LexerError;
