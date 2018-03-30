@@ -1,8 +1,12 @@
 extern crate miniplrs;
 
-use std::path::Path;
+use std::env;
 use std::io::Read;
+use std::path::Path;
+use std::rc::Rc;
 
+use miniplrs::common::configuration::parse_command_line_args;
+use miniplrs::common::logger::ConsoleLogger;
 use miniplrs::runtime::console_io::ConsoleIo;
 use miniplrs::{run_script, ExecutionError};
 
@@ -16,13 +20,15 @@ fn read_file<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
 }
 
 fn main() {
-  // Read the file into a character vector.
-  let input_chars = read_file("./minipl/hello.pl").expect("File should be readable.");
+  let options = parse_command_line_args(env::args());
+  let input_chars = read_file(&options.input_file).expect("File should be readable.");
 
   // Use ConsoleIo as the IO handler, which uses stdin and stdout for print and read.
   let mut io = ConsoleIo;
 
-  match run_script(&input_chars, &mut io) {
+  let logger = ConsoleLogger::from_options(&options);
+
+  match run_script(&input_chars, &mut io, Rc::new(logger)) {
     Ok(_) => return,
     Err(ExecutionError::ParserError(err)) => {
       println!("Parse error: {:?}", err);

@@ -1,12 +1,15 @@
 // This file provides small utility functions for writing lexer tests.
-use common::types::*;
-use common::types::Operator::*;
-use common::types::BinaryOperator::*;
-use common::errors::LexerError;
+use std::rc::Rc;
 
-use parsing::token::Token;
+use common::errors::LexerError;
+use common::logger::NullLogger;
+use common::types::BinaryOperator::*;
+use common::types::Operator::*;
+use common::types::*;
+
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
+use parsing::token::Token;
 use parsing::token_stream::TokenStream;
 
 pub fn add_op() -> Token {
@@ -31,7 +34,7 @@ pub fn variable(s: &str) -> Token {
 
 pub fn create_lexer(input: &str) -> BufferedLexer {
   let stream = CharStream::new(input);
-  BufferedLexer::new(stream)
+  BufferedLexer::new(stream, Rc::new(NullLogger))
 }
 
 pub fn lex(input: &str) -> Result<Vec<Token>, LexerError> {

@@ -1,4 +1,7 @@
+use std::rc::Rc;
+
 use common::errors::*;
+use common::logger::Logger;
 use common::types::*;
 use common::util::VecExt;
 
@@ -8,11 +11,12 @@ use parsing::token_stream::TokenStream;
 
 pub struct Parser<T: TokenStream> {
   lexer: T,
+  logger: Rc<Logger>,
 }
 
 impl<T: TokenStream> Parser<T> {
-  pub fn new(lexer: T) -> Parser<T> {
-    Parser { lexer }
+  pub fn new(lexer: T, logger: Rc<Logger>) -> Parser<T> {
+    Parser { lexer, logger }
   }
 
   fn expect_eq(&mut self, token: &Token) -> Result<(), ParserError> {
@@ -241,7 +245,7 @@ impl<T: TokenStream> Parser<T> {
       }
     }
 
-    println!("Expression: {:?}", output);
+    debug_log!(self.logger, "Expression: {:?}", output);
 
     if output.len() != 1 {
       Err(ParserError::MalformedStatement)
@@ -317,10 +321,14 @@ impl<T: TokenStream> Parser<T> {
         source_position: (start..end),
         statement,
       };
-      println!(
+
+      debug_log!(
+        self.logger,
         "[{:?}] Statement: {:?}",
-        with_ctx.source_position, with_ctx.statement
+        with_ctx.source_position,
+        with_ctx.statement
       );
+
       statements.push(with_ctx);
     }
 

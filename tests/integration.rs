@@ -1,5 +1,8 @@
 extern crate miniplrs;
 
+use std::rc::Rc;
+
+use miniplrs::common::logger::NullLogger;
 use miniplrs::run_script;
 use miniplrs::runtime::Io;
 
@@ -57,7 +60,7 @@ macro_rules! integration_tests {
 
         let source: &'static str = $src;
         let mut io = TestIo::new(input);
-        let result = run_script(source, &mut io);
+        let result = run_script(source, &mut io, Rc::new(NullLogger));
 
         assert_match!(result => $pattern);
         assert_eq!(io.output, output);

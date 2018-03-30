@@ -1,4 +1,7 @@
+use std::rc::Rc;
+
 use common::errors::*;
+use common::logger::Logger;
 use common::types::*;
 
 use parsing::char_stream::*;
@@ -101,7 +104,7 @@ fn read_number_literal(input: &mut CharStream) -> Result<Token, LexerError> {
 }
 
 /// Parses the next token from the input stream.
-fn next_token(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
+fn next_token(input: &mut CharStream, logger: Rc<Logger>) -> Result<TokenWithCtx, LexerError> {
   // Skip whitespace
   input.advance_until(|ch| !is_whitespace(ch));
 
@@ -154,7 +157,7 @@ fn next_token(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
         // If this is a single line comment, skip until the next newline
         input.advance_until(|ch| ch == '\n');
         // Recursively call self to get the next token
-        next_token(input)
+        next_token(input, logger.clone())
       } else if next == '*' {
         input.advance();
 
@@ -176,7 +179,7 @@ fn next_token(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
           prev = next;
         }
 
-        next_token(input)
+        next_token(input, logger.clone())
       } else {
         with_ctx(Ok(Token::Operator(Operator::BinaryOperator(
           BinaryOperator::Div,
@@ -186,20 +189,23 @@ fn next_token(input: &mut CharStream) -> Result<TokenWithCtx, LexerError> {
     _ => with_ctx(read_keyword_or_identifier(input)),
   };
 
-  println!("[{}] Token: {:?}", offset, token);
+  debug_log!(logger, "[{}] Token: {:?}", offset, token);
+
   token
 }
 
 pub struct BufferedLexer {
   stream: CharStream,
   token: Option<TokenWithCtx>,
+  logger: Rc<Logger>,
 }
 
 impl BufferedLexer {
-  pub fn new(stream: CharStream) -> BufferedLexer {
+  pub fn new(stream: CharStream, logger: Rc<Logger>) -> BufferedLexer {
     BufferedLexer {
       stream,
       token: None,
+      logger,
     }
   }
 }
@@ -233,7 +239,7 @@ impl TokenStream for BufferedLexer {
     if self.token.is_some() {
       Ok(self.token.clone().unwrap())
     } else {
-      let next = next_token(&mut self.stream)?;
+      let next = next_token(&mut self.stream, self.logger.clone())?;
       self.token = Some(next.clone());
       Ok(next)
     }
