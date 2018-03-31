@@ -262,7 +262,7 @@ impl TryRecover for BufferedLexer {
         return false;
       }
 
-      if let Ok(_) = self.peek() {
+      if self.peek().is_ok() {
         return true;
       }
 

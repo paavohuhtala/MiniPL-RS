@@ -98,7 +98,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
         let initial_value = initial
           .as_ref()
           .map(|expr| self.evaluate_expression(expr))
-          .unwrap_or(type_of.get_default_value());
+          .unwrap_or_else(|| type_of.get_default_value());
         self.declare(name, *type_of, initial_value);
       }
       Statement::Assign(ref name, ref value) => {
@@ -156,7 +156,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
             self.assign(variable, Value::IntV(i));
 
             for statement in run {
-              self.execute_statement(&statement);
+              self.execute_statement(statement);
             }
           },
           _ => panic!("Type checker will prevent this"),
@@ -167,7 +167,7 @@ impl<'a, T: Io> Interpreter<'a, T> {
 
   pub fn execute(&mut self, program: Program) {
     for statement in program {
-      self.execute_statement(&statement);
+      self.execute_statement(statement);
     }
   }
 }

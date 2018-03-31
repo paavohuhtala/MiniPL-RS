@@ -62,12 +62,12 @@ pub fn run_script<T: Io>(
   let program = parser.parse_program().map_err(|errors| {
     errors
       .into_iter()
-      .map(|err| ExecutionError::ParserError(err))
+      .map(ExecutionError::ParserError)
       .collect::<Vec<ExecutionError>>()
   })?;
 
   // Run the type checker.
-  type_check(&program).map_err(|err| ExecutionError::TypeError(err)).vec_err()?;
+  type_check(&program).map_err(ExecutionError::TypeError).vec_err()?;
 
   // If type checking was succesful, create a new interpreter and run the program.
   let mut interpreter = Interpreter::new(io, &file_context);

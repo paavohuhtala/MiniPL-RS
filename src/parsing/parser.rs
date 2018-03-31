@@ -184,8 +184,8 @@ impl<T: TokenStream> Parser<T> {
             match **op_op_lparen {
               OpStackItem::Operator(op) => {
                 result = create_node(op, &mut output).with_ctx(start);
-                // If we encountered an error, stop looping.
-                !result.is_err()
+                // Continue while the result is ok
+                result.is_ok()
               }
               OpStackItem::LParen => {
                 // We return false to stop the iteration.
@@ -221,8 +221,8 @@ impl<T: TokenStream> Parser<T> {
                 } else {
                   // Mark this operator to be popped, and create the AST node for it.
                   result = create_node(stack_op, &mut output).with_ctx(start);
-                  // If we encountered an error, stop looping.
-                  !result.is_err()
+                  // Continue while the result is ok
+                  result.is_ok()
                 }
               }
             }
@@ -301,7 +301,7 @@ impl<T: TokenStream> Parser<T> {
       &Token::Assert => self.parse_assertion().vec_err(),
       &Token::Identifier(_) => self.parse_assignment().vec_err(),
       &Token::For => self.parse_for(),
-      ref other => Err(ParserError::UnknownStatement { first: other.get_kind() })
+      other => Err(ParserError::UnknownStatement { first: other.get_kind() })
         .with_ctx(first.offset)
         .vec_err(),
     }
@@ -322,7 +322,7 @@ impl<T: TokenStream> Parser<T> {
       let end = self.lexer.offset();
 
       let with_ctx = StatementWithCtx {
-        source_position: (start..end),
+        source_position: start..end,
         statement,
       };
 
@@ -350,7 +350,7 @@ impl<T: TokenStream> Parser<T> {
           return Err(errors);
         }
 
-        return Ok(program);
+        Ok(program)
       }
       Err(mut inner_errors) => {
         errors.append(&mut inner_errors);
@@ -359,9 +359,9 @@ impl<T: TokenStream> Parser<T> {
             Ok(_) => {}
             Err(mut inner_errors) => errors.append(&mut inner_errors),
           }
-          return Err(errors);
+          Err(errors)
         } else {
-          return Err(errors);
+          Err(errors)
         }
       }
     }
