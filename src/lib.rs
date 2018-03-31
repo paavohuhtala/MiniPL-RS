@@ -1,6 +1,6 @@
 #![feature(slice_patterns)]
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 
 use std::rc::Rc;
 
@@ -44,8 +44,10 @@ pub fn run_script<T: Io>(
   source: &str,
   io: &mut T,
   logger: Rc<Logger>,
+  file_context: Option<Rc<FileContextSource>>,
 ) -> Result<(), Vec<ExecutionError>> {
-  let file_context = FileContextSource::from_str(source, None);
+  let file_context =
+    file_context.unwrap_or_else(|| Rc::new(FileContextSource::from_str(source, None)));
 
   // This is our compiler pipeline:
 
@@ -67,7 +69,9 @@ pub fn run_script<T: Io>(
   })?;
 
   // Run the type checker.
-  type_check(&program).map_err(ExecutionError::TypeError).vec_err()?;
+  type_check(&program)
+    .map_err(ExecutionError::TypeError)
+    .vec_err()?;
 
   // If type checking was succesful, create a new interpreter and run the program.
   let mut interpreter = Interpreter::new(io, &file_context);

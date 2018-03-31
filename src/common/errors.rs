@@ -16,21 +16,6 @@ pub trait ErrorWithReason {
   fn get_reason(&self) -> Option<String>;
 }
 
-pub trait MiniPlError: ErrorWithContext + ErrorWithReason {}
-
-impl MiniPlError {
-  fn format(&self, context: &FileContextSource) -> String {
-    let err = String::new();
-
-    let offset = self.get_offset();
-
-    let pos = context
-      .decode_offset(offset)
-      .expect("Should be a valid offset.");
-    err
-  }
-}
-
 #[derive(Debug)]
 pub struct ErrWithCtx<E: ErrorWithReason>(pub E, pub usize);
 
@@ -55,6 +40,14 @@ pub enum CharStreamError {
   EndOfFile,
 }
 
+impl ErrorWithReason for CharStreamError {
+  fn get_reason(&self) -> Option<String> {
+    match *self {
+      CharStreamError::EndOfFile => Some("Unexpected end of file.".to_string()),
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub enum LexerError {
   OutOfTokens,
@@ -65,16 +58,10 @@ pub enum LexerError {
   ReservedKeywordAsIdentifier,
   UnterminatedComment,
   CharStreamError(CharStreamError),
-  IOError(String)
+  IOError(String),
 }
 
 pub type LexerErrorWithCtx = ErrWithCtx<LexerError>;
-
-impl ErrorWithReason for CharStreamError {
-  fn get_reason(&self) -> Option<String> {
-    None
-  }
-}
 
 impl ErrorWithReason for LexerError {
   fn get_reason(&self) -> Option<String> {
@@ -82,15 +69,8 @@ impl ErrorWithReason for LexerError {
   }
 }
 
-impl ErrorWithReason for ParserError {
-  fn get_reason(&self) -> Option<String> {
-    None
-  }
-}
-
 #[derive(Debug, Clone)]
 pub enum ParserError {
-  MalformedStatement,
   InvalidBinaryExpression,
   UnknownStatement { first: TokenKind },
   UnexpectedToken { expected: TokenKind, was: TokenKind },
@@ -101,6 +81,29 @@ pub enum ParserError {
 
 pub type ParserErrorWithCtx = ErrWithCtx<ParserError>;
 pub type ParserErrors = Vec<ParserErrorWithCtx>;
+
+impl ErrorWithReason for ParserError {
+  fn get_reason(&self) -> Option<String> {
+    match *self {
+      ParserError::InvalidBinaryExpression => Some("Invalid expression.".to_string()),
+      ParserError::UnknownStatement { first } => {
+        Some(format!("Unknown starting token: {:?}", first))
+      }
+      ParserError::MissingRParen => Some(
+        "Unbalanced parenthesis in expression (probably missing right parenthesis?)".to_string(),
+      ),
+      ParserError::IncompleteExpression => Some("Incomplete expression.".to_string()),
+      ParserError::UnexpectedToken { expected, was } => Some(format!(
+        "Unexpected token. Expected {:?}, was {:?}",
+        expected, was
+      )),
+      ParserError::LexerError(ref lexer_error) => Some(format!(
+        "Lexer error: {}",
+        lexer_error.get_reason().unwrap()
+      )),
+    }
+  }
+}
 
 pub trait AddCtxToError
 where

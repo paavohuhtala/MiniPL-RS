@@ -9,7 +9,7 @@ pub struct FilePosition {
 }
 
 pub struct FileContextSource {
-  file_name: Option<String>,
+  pub file_name: Option<String>,
   // Values are tuples of (offset from start, content)
   // Line data is stored using reference counted pointers so that
   // we can safely give out references to them.
@@ -70,6 +70,19 @@ impl FileContextSource {
       .collect()
   }
 
+  pub fn format_source_quote_line(row: usize, content: &str) -> String {
+    format!("[{:4}]  {}\n", row, content)
+  }
+
+  pub fn format_source_quote(first_row: usize, lines: &[Rc<String>]) -> String {
+    lines
+      .iter()
+      .fold((String::new(), first_row), |(acc, row), x| {
+        (acc + &Self::format_source_quote_line(row, x), row + 1)
+      })
+      .0
+  }
+
   pub fn get_source_quote(&self, range: &Range<usize>) -> String {
     let source_lines = self.get_range_lines(range);
 
@@ -77,12 +90,6 @@ impl FileContextSource {
       .decode_offset(range.start)
       .expect("Should be a valid offset.");
 
-    source_lines
-      .iter()
-      .fold((String::new(), pos.row), |(acc, row), x| {
-        let line_number = format!("[{:4}]  ", row);
-        (acc + &line_number + x + "\n", row + 1)
-      })
-      .0
+    Self::format_source_quote(pos.row, &source_lines)
   }
 }

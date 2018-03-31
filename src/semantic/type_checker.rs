@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use common::errors::ErrorWithReason;
 use common::types::*;
 use parsing::ast::*;
 
@@ -22,6 +23,39 @@ pub enum TypeError {
   ReadArgumentError(TypeName),
   AssertArgumentError(TypeName),
   AssignToImmutable(String),
+}
+
+impl ErrorWithReason for TypeError {
+  fn get_reason(&self) -> Option<String> {
+    use TypeError::*;
+    use common::types::TypeName::*;
+
+    fn format_type_name(type_name: TypeName) -> &'static str {
+      match type_name {
+        IntType => "int",
+        StringType => "string",
+        BoolType => "bool",
+      }
+    }
+
+    match self {
+      RedeclaredIdentifier(name) => Some(format!("Identifier {} was redeclared.", name)),
+      UndeclaredIdentifier(name) => {
+        Some(format!("Identifier {} was used before declaration.", name))
+      }
+      InvalidAssignment {
+        name,
+        was,
+        new_type,
+      } => Some(format!(
+        "Tried to assign <{}> to \"{}\", which is <{}>.",
+        format_type_name(*was),
+        name,
+        format_type_name(*new_type)
+      )),
+      _ => None,
+    }
+  }
 }
 
 struct Symbol {
@@ -62,8 +96,8 @@ impl TypeCheckingContext {
   fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
     use self::Expression::*;
     use self::TypeError::*;
-    use common::types::TypeName::*;
     use common::types::BinaryOperator::*;
+    use common::types::TypeName::*;
     use common::types::UnaryOperator::*;
 
     match *expression {
@@ -230,9 +264,15 @@ mod tests {
   }
 
   macro_rules! type_shorthand {
-    (int) => (TypeName::IntType);
-    (boolean) => (TypeName::BoolType);
-    (string) => (TypeName::StringType);
+    (int) => {
+      TypeName::IntType
+    };
+    (boolean) => {
+      TypeName::BoolType
+    };
+    (string) => {
+      TypeName::StringType
+    };
   }
 
   macro_rules! operator_tests {

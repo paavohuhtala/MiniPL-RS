@@ -63,7 +63,7 @@ macro_rules! integration_tests {
 
         let source: &'static str = $src;
         let mut io = TestIo::new(input);
-        let result = run_script(source, &mut io, Rc::new(NullLogger));
+        let result = run_script(source, &mut io, Rc::new(NullLogger), None);
 
         let result_with_sliced_errors: Result<(), &[ExecutionError]> = if let Err(ref errors) = result {
           let sliced_errors = errors.as_slice();
