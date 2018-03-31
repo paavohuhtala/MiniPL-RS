@@ -68,7 +68,7 @@ impl<T> Try for MiniPlResult<T> {
   fn into_result(self) -> Result<T, Self::Error> {
     match self {
       MiniPlResult::Success(value) => Ok(value),
-      MiniPlResult::Errors(errs) => Err(errs)
+      MiniPlResult::Errors(errs) => Err(errs),
     }
   }
 

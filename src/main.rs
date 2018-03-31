@@ -30,11 +30,8 @@ fn main() {
 
   match run_script(&input_chars, &mut io, Rc::new(logger)) {
     Ok(_) => return,
-    Err(ExecutionError::ParserError(err)) => {
-      println!("Parse error: {:?}", err);
-    }
-    Err(ExecutionError::TypeError(err)) => {
-      println!("Type error: {:?}", err);
+    Err(errors) => {
+      println!("Errors: {:?}", errors);
     }
   }
 }

@@ -1,3 +1,5 @@
+#![feature(slice_patterns)]
+
 extern crate miniplrs;
 
 use std::rc::Rc;
@@ -62,7 +64,14 @@ macro_rules! integration_tests {
         let mut io = TestIo::new(input);
         let result = run_script(source, &mut io, Rc::new(NullLogger));
 
-        assert_match!(result => $pattern);
+        let result_with_sliced_errors: Result<(), &[ExecutionError]> = if let Err(ref errors) = result {
+          let sliced_errors = errors.as_slice();
+          Err(sliced_errors)
+        } else {
+          Ok(())
+        };
+
+        assert_match!(result_with_sliced_errors => $pattern);
         assert_eq!(io.output, output);
       }
     )*
@@ -93,11 +102,11 @@ integration_tests! {
   hello_world_without_semicolon(r#"
     print "Hello, world!"
   "#) {
-    result Err(
+    result Err(&[
       ExecutionError::ParserError(
         UnexpectedToken { expected: SemicolonK, was: EndOfFileK }
       )
-    ),
+    ]),
     input [],
     output []
   }
@@ -128,7 +137,7 @@ integration_tests! {
     a := 10;
     print a;
   "#) {
-    result Err(ExecutionError::TypeError(UndeclaredIdentifier(_a))),
+    result Err(&[ExecutionError::TypeError(UndeclaredIdentifier(_))]),
     input [],
     output []
   }
@@ -228,7 +237,7 @@ integration_tests! {
       i := 100;
     end for;
   "#) {
-    result Err(ExecutionError::TypeError(AssignToImmutable(_))),
+    result Err(&[ExecutionError::TypeError(AssignToImmutable(_))]),
     input [],
     output []
   }
@@ -255,13 +264,13 @@ integration_tests! {
   }
 
   invalid_block_comment_1(r#"/*/"#) {
-    result Err(ExecutionError::ParserError(LexerError(UnterminatedComment))),
+    result Err(&[ExecutionError::ParserError(LexerError(UnterminatedComment))]),
     input [],
     output []
   }
 
   invalid_block_comment_2(r#"/* * * * * * / * / * / **"#) {
-    result Err(ExecutionError::ParserError(LexerError(UnterminatedComment))),
+    result Err(&[ExecutionError::ParserError(LexerError(UnterminatedComment))]),
     input [],
     output []
   }

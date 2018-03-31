@@ -42,7 +42,7 @@ pub fn run_script<T: Io>(
   source: &str,
   io: &mut T,
   logger: Rc<Logger>,
-) -> Result<(), ExecutionError> {
+) -> Result<(), Vec<ExecutionError>> {
   let file_context = FileContextSource::from_str(source, None);
 
   // This is our compiler pipeline:
@@ -57,10 +57,18 @@ pub fn run_script<T: Io>(
   let mut parser = Parser::new(lexer, logger.clone());
 
   // ... which we'll use to obtain the program AST.
-  let program = parser.parse_program()?;
+  let program = parser.parse_program().map_err(|err| {
+    err
+      .into_iter()
+      .map(ExecutionError::ParserError)
+      .collect::<Vec<ExecutionError>>()
+  })?;
 
   // Run the type checker.
-  type_check(&program)?;
+  type_check(&program).map_err(|err| {
+    let execution_err: ExecutionError = err.into();
+    vec![execution_err]
+  })?;
 
   // If type checking was succesful, create a new interpreter and run the program.
   let mut interpreter = Interpreter::new(io, &file_context);

@@ -335,10 +335,60 @@ impl<T: TokenStream> Parser<T> {
     Ok(statements)
   }
 
-  pub fn parse_program(&mut self) -> Result<Vec<StatementWithCtx>, ParserError> {
-    let program = self.parse_statement_list()?;
-    self.expect_eq(&Token::EndOfFile)?;
-    Ok(program)
+  pub fn parse_program(&mut self) -> Result<Vec<StatementWithCtx>, Vec<ParserError>> {
+    let mut errors = Vec::new();
+
+    // We have to do this manually in order to implement the recovery mechanism.
+    match self.parse_statement_list() {
+      Ok(program) => {
+        if let Err(err) = self.expect_eq(&Token::EndOfFile) {
+          errors.push(err);
+          return Err(errors);
+        }
+
+        return Ok(program);
+      }
+      Err(err) => {
+        errors.push(err);
+        if self.try_recover() {
+          match self.parse_statement_list() {
+            Ok(_) => {}
+            Err(error) => errors.push(error),
+          }
+          return Err(errors);
+        } else {
+          return Err(errors);
+        }
+      }
+    }
+  }
+}
+
+impl<T: TokenStream> TryRecover for Parser<T> {
+  // Recovery strategy: advance until we encounter a semicolon.
+  // If we reach the end of file, recovery fails.
+  fn try_recover(&mut self) -> bool {
+    loop {
+      match self.lexer.peek() {
+        Ok(TokenWithCtx {
+          token: Token::Semicolon,
+          ..
+        }) => {
+          self.advance().unwrap();
+          return true;
+        }
+        Ok(TokenWithCtx {
+          token: Token::EndOfFile,
+          ..
+        })
+        | Err(_) => {
+          return false;
+        }
+        Ok(_) => {
+          self.advance().unwrap();
+        }
+      }
+    }
   }
 }
 
