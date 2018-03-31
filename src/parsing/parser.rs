@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use common::errors::*;
-use common::errors::{AddCtxToError, AddCtxToResult};
+use common::errors::{AddCtxToResult};
 use common::logger::Logger;
 use common::types::*;
 use common::util::{ResultExt, VecExt};
@@ -301,7 +301,7 @@ impl<T: TokenStream> Parser<T> {
       &Token::Assert => self.parse_assertion().vec_err(),
       &Token::Identifier(_) => self.parse_assignment().vec_err(),
       &Token::For => self.parse_for(),
-      ref other => Err(ParserError::UnknownStatement { first: first.token.get_kind() })
+      ref other => Err(ParserError::UnknownStatement { first: other.get_kind() })
         .with_ctx(first.offset)
         .vec_err(),
     }

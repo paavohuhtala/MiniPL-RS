@@ -1,6 +1,4 @@
-use std::io;
 use std::io::Error;
-use std::ops::Range;
 
 use diagnostics::file_context::FileContextSource;
 use parsing::token::*;

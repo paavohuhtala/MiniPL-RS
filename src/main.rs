@@ -8,7 +8,7 @@ use std::rc::Rc;
 use miniplrs::common::configuration::parse_command_line_args;
 use miniplrs::common::logger::ConsoleLogger;
 use miniplrs::runtime::console_io::ConsoleIo;
-use miniplrs::{run_script, ExecutionError};
+use miniplrs::{run_script};
 
 fn read_file<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
   let mut input_file = std::fs::File::open(path)?;

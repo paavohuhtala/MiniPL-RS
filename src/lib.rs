@@ -1,4 +1,6 @@
 #![feature(slice_patterns)]
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 
 use std::rc::Rc;
 
@@ -13,7 +15,6 @@ use common::errors::*;
 use common::logger::Logger;
 use common::util::ResultExt;
 use diagnostics::file_context::*;
-use parsing::ast::StatementWithCtx;
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
 use parsing::parser::Parser;
