@@ -51,11 +51,10 @@ impl ErrorWithReason for CharStreamError {
 #[derive(Debug, Clone)]
 pub enum LexerError {
   OutOfTokens,
-  UnknownToken,
+  UnknownToken(String),
   UnknownEscapeCode(String),
   UnterminatedStringLiteral,
   InvalidNumberLiteral,
-  ReservedKeywordAsIdentifier,
   UnterminatedComment,
   CharStreamError(CharStreamError),
   IOError(String),
@@ -65,7 +64,26 @@ pub type LexerErrorWithCtx = ErrWithCtx<LexerError>;
 
 impl ErrorWithReason for LexerError {
   fn get_reason(&self) -> Option<String> {
-    None
+    use LexerError::*;
+    match *self {
+      OutOfTokens => Some("Out of input.".to_string()),
+      UnknownToken(ref starting_with) => Some(format!(
+        "Encountered an unknown token (starting with {}).",
+        starting_with
+      )),
+      UnknownEscapeCode(ref escape_code) => Some(format!(
+        "Unknown escape character in string literal: {}",
+        escape_code
+      )),
+      UnterminatedStringLiteral => Some("Unterminated string literal.".to_string()),
+      InvalidNumberLiteral => Some("Invalid number literal.".to_string()),
+      UnterminatedComment => Some("Unterminated comment literal.".to_string()),
+      CharStreamError(ref error) => Some(format!(
+        "Character stream error: {}",
+        error.get_reason().unwrap()
+      )),
+      IOError(ref error_msg) => Some(format!("IO error: {}", error_msg)),
+    }
   }
 }
 

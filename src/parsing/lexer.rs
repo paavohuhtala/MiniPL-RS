@@ -10,9 +10,6 @@ use parsing::token_stream::TokenStream;
 use parsing::util::*;
 
 fn read_string_literal(input: &mut CharStream) -> Result<Token, LexerError> {
-  if input.peek()? != '"' {
-    return Err(LexerError::UnknownToken);
-  }
   input.advance();
 
   let mut chars = Vec::new();
@@ -63,7 +60,8 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
       let name: String = chars.iter().collect();
 
       if !is_valid_identifier(&name) {
-        Err(LexerError::UnknownToken)
+        // It's likely this case is impossible.
+        Err(LexerError::UnknownToken(name))
       } else {
         Ok(Token::Identifier(name))
       }
@@ -139,11 +137,12 @@ fn next_token(input: &mut CharStream, logger: Rc<Logger>) -> Result<TokenWithCtx
     }
     '.' => {
       input.advance();
-      if input.peek()? == '.' {
+      let next = input.peek()?;
+      if next == '.' {
         input.advance();
         with_ctx(Ok(Token::Range))
       } else {
-        with_ctx(Err(LexerError::UnknownToken))
+        with_ctx(Err(LexerError::UnknownToken(next.to_string())))
       }
     }
     '0'...'9' => with_ctx(read_number_literal(input)),
@@ -186,7 +185,8 @@ fn next_token(input: &mut CharStream, logger: Rc<Logger>) -> Result<TokenWithCtx
         ))))
       }
     }
-    _ => with_ctx(read_keyword_or_identifier(input)),
+    'A'...'Z' | 'a'...'z' => with_ctx(read_keyword_or_identifier(input)),
+    first => with_ctx(Err(LexerError::UnknownToken(first.to_string()))),
   };
 
   debug_log!(logger, "[{}] Token: {:?}", offset, token);
