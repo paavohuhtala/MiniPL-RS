@@ -235,18 +235,19 @@ impl TokenStream for BufferedLexer {
   }
 
   /// Tries to get the next token, either from the buffer or from the character stream.
-  fn peek(&mut self) -> Result<TokenWithCtx, LexerError> {
+  fn peek(&mut self) -> Result<TokenWithCtx, LexerErrorWithCtx> {
     if self.token.is_some() {
       Ok(self.token.clone().unwrap())
     } else {
-      let next = next_token(&mut self.stream, self.logger.clone())?;
+      let start_pos = self.offset();
+      let next = next_token(&mut self.stream, self.logger.clone()).with_ctx(start_pos)?;
       self.token = Some(next.clone());
       Ok(next)
     }
   }
 
   /// Same as `peek()`, followed by `advance()`.
-  fn next(&mut self) -> Result<TokenWithCtx, LexerError> {
+  fn next(&mut self) -> Result<TokenWithCtx, LexerErrorWithCtx> {
     let token = self.peek()?;
     self.advance();
     Ok(token)

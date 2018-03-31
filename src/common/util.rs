@@ -21,3 +21,13 @@ impl<T> VecExt<T> for Vec<T> {
     }
   }
 }
+
+pub trait ResultExt<T, E> {
+  fn vec_err(self) -> Result<T, Vec<E>>;
+}
+
+impl<T, E> ResultExt<T, E> for Result<T, E> {
+  fn vec_err(self) -> Result<T, Vec<E>> {
+    self.map_err(|err| vec![err])
+  }
+}

@@ -13,8 +13,8 @@ pub trait TokenStream {
   fn offset(&self) -> usize;
 
   /// Tries to read the next token.
-  fn peek(&mut self) -> Result<TokenWithCtx, LexerError>;
+  fn peek(&mut self) -> Result<TokenWithCtx, ErrWithCtx<LexerError>>;
 
   /// Tries to read the next token, and advances to the next token on success.
-  fn next(&mut self) -> Result<TokenWithCtx, LexerError>;
+  fn next(&mut self) -> Result<TokenWithCtx, ErrWithCtx<LexerError>>;
 }

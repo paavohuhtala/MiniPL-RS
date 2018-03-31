@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use common::errors::ParserError;
+use common::errors::*;
 use common::logger::NullLogger;
 
 use parsing::ast::{Expression, Statement};
@@ -15,10 +15,12 @@ pub fn create_parser(src: &str) -> Parser<BufferedLexer> {
 
 pub fn parse_stmnt(src: &str) -> Result<Statement, ParserError> {
   let mut parser = create_parser(src);
-  parser.parse_statement()
+  parser
+    .parse_statement()
+    .map_err(|err| err.first().unwrap().0.clone())
 }
 
 pub fn parse_expr(src: &str) -> Result<Expression, ParserError> {
   let mut parser = create_parser(src);
-  parser.parse_expression()
+  parser.parse_expression().map_err(|err| err.0)
 }

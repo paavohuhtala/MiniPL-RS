@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use common::errors::*;
+use common::errors::{AddCtxToError, AddCtxToResult};
 use common::logger::Logger;
 use common::types::*;
-use common::util::VecExt;
+use common::util::{ResultExt, VecExt};
 
 use parsing::ast::*;
 use parsing::token::*;
@@ -19,23 +20,23 @@ impl<T: TokenStream> Parser<T> {
     Parser { lexer, logger }
   }
 
-  fn expect_eq(&mut self, token: &Token) -> Result<(), ParserError> {
-    match self.lexer.peek()? {
-      ref parsed_token if &parsed_token.token == token => {
+  fn expect_eq(&mut self, token: &Token) -> Result<(), ParserErrorWithCtx> {
+    let next = self.lexer.peek()?;
+    match next.token {
+      ref parsed_token if parsed_token == token => {
         self.lexer.advance();
         Ok(())
       }
       parsed_token => Err(ParserError::UnexpectedToken {
         expected: token.get_kind(),
-        was: parsed_token.token.get_kind(),
-      }),
+        was: parsed_token.get_kind(),
+      }).with_ctx(next.offset),
     }
   }
 
-  fn expect_identifier(&mut self) -> Result<String, ParserError> {
-    let token = self.lexer.peek()?.token;
-
-    match token {
+  fn expect_identifier(&mut self) -> Result<String, ParserErrorWithCtx> {
+    let next = self.lexer.peek()?;
+    match next.token {
       Token::Identifier(name) => {
         self.advance()?;
         Ok(name.clone())
@@ -43,14 +44,13 @@ impl<T: TokenStream> Parser<T> {
       other => Err(ParserError::UnexpectedToken {
         expected: TokenKind::IdentifierK,
         was: other.get_kind(),
-      }),
+      }).with_ctx(next.offset),
     }
   }
 
-  fn expect_type_name(&mut self) -> Result<TypeName, ParserError> {
-    let token = self.lexer.peek()?.token;
-
-    match token {
+  fn expect_type_name(&mut self) -> Result<TypeName, ParserErrorWithCtx> {
+    let next = self.lexer.peek()?;
+    match next.token {
       Token::Type(type_name) => {
         self.advance()?;
         Ok(type_name)
@@ -58,16 +58,16 @@ impl<T: TokenStream> Parser<T> {
       other => Err(ParserError::UnexpectedToken {
         expected: TokenKind::TypeK,
         was: other.get_kind(),
-      }),
+      }).with_ctx(next.offset),
     }
   }
 
-  fn advance(&mut self) -> Result<(), ParserError> {
+  fn advance(&mut self) -> Result<(), ParserErrorWithCtx> {
     // Zero out the value (replace with empty tuple) and cast the error with .into()
     self.lexer.next().map(|_| ()).map_err(|err| err.into())
   }
 
-  fn parse_print_statement(&mut self) -> Result<Statement, ParserError> {
+  fn parse_print_statement(&mut self) -> Result<Statement, ParserErrorWithCtx> {
     self.expect_eq(&Token::Print)?;
 
     let value = self.parse_expression()?;
@@ -77,7 +77,7 @@ impl<T: TokenStream> Parser<T> {
     Ok(Statement::Print(value))
   }
 
-  fn parse_read_statement(&mut self) -> Result<Statement, ParserError> {
+  fn parse_read_statement(&mut self) -> Result<Statement, ParserErrorWithCtx> {
     self.expect_eq(&Token::Read)?;
 
     let identifier = self.expect_identifier()?;
@@ -87,7 +87,7 @@ impl<T: TokenStream> Parser<T> {
     Ok(Statement::Read(identifier))
   }
 
-  fn parse_decleration(&mut self) -> Result<Statement, ParserError> {
+  fn parse_decleration(&mut self) -> Result<Statement, ParserErrorWithCtx> {
     self.expect_eq(&Token::Var)?;
 
     let name = self.expect_identifier()?;
@@ -114,7 +114,7 @@ impl<T: TokenStream> Parser<T> {
     })
   }
 
-  fn parse_assignment(&mut self) -> Result<Statement, ParserError> {
+  fn parse_assignment(&mut self) -> Result<Statement, ParserErrorWithCtx> {
     let identifier = self.expect_identifier()?;
 
     self.expect_eq(&Token::Assign)?;
@@ -127,7 +127,7 @@ impl<T: TokenStream> Parser<T> {
   }
 
   // Parses expressions using a modified version of the shunting yard algorithm.
-  pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+  pub fn parse_expression(&mut self) -> Result<Expression, ParserErrorWithCtx> {
     #[derive(PartialEq)]
     enum OpStackItem {
       Operator(Operator),
@@ -136,6 +136,8 @@ impl<T: TokenStream> Parser<T> {
 
     let mut output: Vec<Expression> = Vec::new();
     let mut operators: Vec<OpStackItem> = Vec::new();
+
+    let start = self.lexer.peek()?.offset;
 
     // We don't need to access this from outside, so this function can be local.
     fn create_node(operator: Operator, output: &mut Vec<Expression>) -> Result<(), ParserError> {
@@ -157,9 +159,9 @@ impl<T: TokenStream> Parser<T> {
     }
 
     loop {
-      let next = self.lexer.peek()?.token;
+      let next = self.lexer.peek()?;
 
-      match next {
+      match next.token {
         // Literals are just pushed to the output stack
         Token::Literal(value) => {
           self.advance()?;
@@ -181,7 +183,7 @@ impl<T: TokenStream> Parser<T> {
           operators.pop_while(|op_op_lparen| {
             match **op_op_lparen {
               OpStackItem::Operator(op) => {
-                result = create_node(op, &mut output);
+                result = create_node(op, &mut output).with_ctx(start);
                 // If we encountered an error, stop looping.
                 !result.is_err()
               }
@@ -218,7 +220,7 @@ impl<T: TokenStream> Parser<T> {
                   false
                 } else {
                   // Mark this operator to be popped, and create the AST node for it.
-                  result = create_node(stack_op, &mut output);
+                  result = create_node(stack_op, &mut output).with_ctx(start);
                   // If we encountered an error, stop looping.
                   !result.is_err()
                 }
@@ -238,9 +240,9 @@ impl<T: TokenStream> Parser<T> {
 
     for op_or_lparen in operators.iter().rev() {
       match *op_or_lparen {
-        OpStackItem::LParen => return Err(ParserError::MissingRParen),
+        OpStackItem::LParen => Err(ParserError::MissingRParen).with_ctx(start)?,
         OpStackItem::Operator(op) => {
-          create_node(op, &mut output)?;
+          create_node(op, &mut output).with_ctx(start)?;
         }
       }
     }
@@ -248,39 +250,39 @@ impl<T: TokenStream> Parser<T> {
     debug_log!(self.logger, "Expression: {:?}", output);
 
     if output.len() != 1 {
-      Err(ParserError::MalformedStatement)
+      Err(ParserError::InvalidBinaryExpression).with_ctx(start)
     } else {
       Ok(output.remove(0))
     }
   }
 
-  pub fn parse_assertion(&mut self) -> Result<Statement, ParserError> {
+  pub fn parse_assertion(&mut self) -> Result<Statement, ParserErrorWithCtx> {
     self.expect_eq(&Token::Assert)?;
     let assertion = self.parse_expression()?;
     self.expect_eq(&Token::Semicolon)?;
     Ok(Statement::Assert(assertion))
   }
 
-  pub fn parse_for(&mut self) -> Result<Statement, ParserError> {
-    self.expect_eq(&Token::For)?;
+  pub fn parse_for(&mut self) -> Result<Statement, ParserErrors> {
+    self.expect_eq(&Token::For).vec_err()?;
 
-    let variable = self.expect_identifier()?;
+    let variable = self.expect_identifier().vec_err()?;
 
-    self.expect_eq(&Token::In)?;
+    self.expect_eq(&Token::In).vec_err()?;
 
-    let from = self.parse_expression()?;
+    let from = self.parse_expression().vec_err()?;
 
-    self.expect_eq(&Token::Range)?;
+    self.expect_eq(&Token::Range).vec_err()?;
 
-    let to = self.parse_expression()?;
+    let to = self.parse_expression().vec_err()?;
 
-    self.expect_eq(&Token::Do)?;
+    self.expect_eq(&Token::Do).vec_err()?;
 
     let run = self.parse_statement_list()?;
 
-    self.expect_eq(&Token::End)?;
-    self.expect_eq(&Token::For)?;
-    self.expect_eq(&Token::Semicolon)?;
+    self.expect_eq(&Token::End).vec_err()?;
+    self.expect_eq(&Token::For).vec_err()?;
+    self.expect_eq(&Token::Semicolon).vec_err()?;
 
     Ok(Statement::For {
       variable,
@@ -290,24 +292,26 @@ impl<T: TokenStream> Parser<T> {
     })
   }
 
-  pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-    let first = self.lexer.peek()?.token;
-    match first {
-      Token::Print => self.parse_print_statement(),
-      Token::Read => self.parse_read_statement(),
-      Token::Var => self.parse_decleration(),
-      Token::Assert => self.parse_assertion(),
-      Token::Identifier(_) => self.parse_assignment(),
-      Token::For => self.parse_for(),
-      _ => Err(ParserError::MalformedStatement),
+  pub fn parse_statement(&mut self) -> Result<Statement, ParserErrors> {
+    let first = self.lexer.peek().map_err(|err| err.into()).vec_err()?;
+    match &first.token {
+      &Token::Print => self.parse_print_statement().vec_err(),
+      &Token::Read => self.parse_read_statement().vec_err(),
+      &Token::Var => self.parse_decleration().vec_err(),
+      &Token::Assert => self.parse_assertion().vec_err(),
+      &Token::Identifier(_) => self.parse_assignment().vec_err(),
+      &Token::For => self.parse_for(),
+      ref other => Err(ParserError::UnknownStatement { first: first.token.get_kind() })
+        .with_ctx(first.offset)
+        .vec_err(),
     }
   }
 
-  pub fn parse_statement_list(&mut self) -> Result<Vec<StatementWithCtx>, ParserError> {
+  pub fn parse_statement_list(&mut self) -> Result<Vec<StatementWithCtx>, ParserErrors> {
     let mut statements = Vec::new();
 
     loop {
-      let next = self.lexer.peek()?;
+      let next = self.lexer.peek().map_err(|err| err.into()).vec_err()?;
       // If we reached end of file OR the end keyword, stop parsing.
       if next.token == Token::EndOfFile || next.token == Token::End {
         break;
@@ -335,7 +339,7 @@ impl<T: TokenStream> Parser<T> {
     Ok(statements)
   }
 
-  pub fn parse_program(&mut self) -> Result<Vec<StatementWithCtx>, Vec<ParserError>> {
+  pub fn parse_program(&mut self) -> Result<Vec<StatementWithCtx>, ParserErrors> {
     let mut errors = Vec::new();
 
     // We have to do this manually in order to implement the recovery mechanism.
@@ -348,12 +352,12 @@ impl<T: TokenStream> Parser<T> {
 
         return Ok(program);
       }
-      Err(err) => {
-        errors.push(err);
+      Err(mut inner_errors) => {
+        errors.append(&mut inner_errors);
         if self.try_recover() {
-          match self.parse_statement_list() {
+          match self.parse_program() {
             Ok(_) => {}
-            Err(error) => errors.push(error),
+            Err(mut inner_errors) => errors.append(&mut inner_errors),
           }
           return Err(errors);
         } else {

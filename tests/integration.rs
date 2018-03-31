@@ -7,6 +7,7 @@ use std::rc::Rc;
 use miniplrs::common::logger::NullLogger;
 use miniplrs::run_script;
 use miniplrs::runtime::Io;
+use miniplrs::common::errors::*;
 
 struct TestIo {
   input: Vec<String>,
@@ -104,7 +105,7 @@ integration_tests! {
   "#) {
     result Err(&[
       ExecutionError::ParserError(
-        UnexpectedToken { expected: SemicolonK, was: EndOfFileK }
+        ErrWithCtx(UnexpectedToken { expected: SemicolonK, was: EndOfFileK }, _)
       )
     ]),
     input [],
@@ -264,13 +265,17 @@ integration_tests! {
   }
 
   invalid_block_comment_1(r#"/*/"#) {
-    result Err(&[ExecutionError::ParserError(LexerError(UnterminatedComment))]),
+    result Err(&[
+      ExecutionError::ParserError(ErrWithCtx(LexerError(UnterminatedComment), _))
+    ]),
     input [],
     output []
   }
 
   invalid_block_comment_2(r#"/* * * * * * / * / * / **"#) {
-    result Err(&[ExecutionError::ParserError(LexerError(UnterminatedComment))]),
+    result Err(&[
+      ExecutionError::ParserError(ErrWithCtx(LexerError(UnterminatedComment), _))
+    ]),
     input [],
     output []
   }

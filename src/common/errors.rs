@@ -1,6 +1,6 @@
+use std::io;
 use std::io::Error;
 use std::ops::Range;
-use std::ops::Try;
 
 use diagnostics::file_context::FileContextSource;
 use parsing::token::*;
@@ -11,7 +11,7 @@ use parsing::token::*;
 // LexerError::CharStreamError(EndOfFile)
 
 pub trait ErrorWithContext {
-  fn get_range(&self) -> &Range<usize>;
+  fn get_offset(&self) -> usize;
 }
 
 pub trait ErrorWithReason {
@@ -24,29 +24,21 @@ impl MiniPlError {
   fn format(&self, context: &FileContextSource) -> String {
     let err = String::new();
 
-    let range = self.get_range();
+    let offset = self.get_offset();
 
-    let start_pos = context
-      .decode_offset(range.start)
+    let pos = context
+      .decode_offset(offset)
       .expect("Should be a valid offset.");
-
-    let end_pos = if range.start == range.end {
-      start_pos
-    } else {
-      context
-        .decode_offset(range.end)
-        .expect("Should be a valid offset.")
-    };
-
     err
   }
 }
 
-pub struct ErrWithCtx<E: ErrorWithReason>(E, Range<usize>);
+#[derive(Debug)]
+pub struct ErrWithCtx<E: ErrorWithReason>(pub E, pub usize);
 
 impl<E: ErrorWithReason> ErrorWithContext for ErrWithCtx<E> {
-  fn get_range(&self) -> &Range<usize> {
-    &self.1
+  fn get_offset(&self) -> usize {
+    self.1
   }
 }
 
@@ -56,41 +48,16 @@ impl<E: ErrorWithReason> ErrorWithReason for ErrWithCtx<E> {
   }
 }
 
-pub enum MiniPlResult<T> {
-  Success(T),
-  Errors(Vec<Box<MiniPlError>>),
-}
-
-impl<T> Try for MiniPlResult<T> {
-  type Ok = T;
-  type Error = Vec<Box<MiniPlError>>;
-
-  fn into_result(self) -> Result<T, Self::Error> {
-    match self {
-      MiniPlResult::Success(value) => Ok(value),
-      MiniPlResult::Errors(errs) => Err(errs),
-    }
-  }
-
-  fn from_ok(value: T) -> Self {
-    MiniPlResult::Success(value)
-  }
-
-  fn from_error(errors: Self::Error) -> Self {
-    MiniPlResult::Errors(errors)
-  }
-}
-
 pub trait TryRecover {
   fn try_recover(&mut self) -> bool;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CharStreamError {
   EndOfFile,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LexerError {
   OutOfTokens,
   UnknownToken,
@@ -100,21 +67,79 @@ pub enum LexerError {
   ReservedKeywordAsIdentifier,
   UnterminatedComment,
   CharStreamError(CharStreamError),
-  IOError(Error),
+  IOError(String)
 }
 
-#[derive(Debug)]
+pub type LexerErrorWithCtx = ErrWithCtx<LexerError>;
+
+impl ErrorWithReason for CharStreamError {
+  fn get_reason(&self) -> Option<String> {
+    None
+  }
+}
+
+impl ErrorWithReason for LexerError {
+  fn get_reason(&self) -> Option<String> {
+    None
+  }
+}
+
+impl ErrorWithReason for ParserError {
+  fn get_reason(&self) -> Option<String> {
+    None
+  }
+}
+
+#[derive(Debug, Clone)]
 pub enum ParserError {
   MalformedStatement,
+  InvalidBinaryExpression,
+  UnknownStatement { first: TokenKind },
   UnexpectedToken { expected: TokenKind, was: TokenKind },
   LexerError(LexerError),
   MissingRParen,
   IncompleteExpression,
 }
 
+pub type ParserErrorWithCtx = ErrWithCtx<ParserError>;
+pub type ParserErrors = Vec<ParserErrorWithCtx>;
+
+pub trait AddCtxToError
+where
+  Self: ErrorWithReason + Sized,
+{
+  fn with_ctx(self, ctx: usize) -> ErrWithCtx<Self> {
+    ErrWithCtx(self, ctx)
+  }
+}
+
+impl<T: ErrorWithReason + Sized> AddCtxToError for T {}
+
+pub trait AddCtxToResult<T, E>
+where
+  E: ErrorWithReason + Sized,
+{
+  fn with_ctx(self, ctx: usize) -> Result<T, ErrWithCtx<E>>;
+}
+
+impl<T, E> AddCtxToResult<T, E> for Result<T, E>
+where
+  E: ErrorWithReason + Sized,
+{
+  fn with_ctx(self, ctx: usize) -> Result<T, ErrWithCtx<E>> {
+    self.map_err(|err| ErrWithCtx(err, ctx))
+  }
+}
+
+impl From<ErrWithCtx<LexerError>> for ErrWithCtx<ParserError> {
+  fn from(err: ErrWithCtx<LexerError>) -> ErrWithCtx<ParserError> {
+    ErrWithCtx(err.0.into(), err.1)
+  }
+}
+
 impl From<Error> for LexerError {
   fn from(err: Error) -> LexerError {
-    LexerError::IOError(err)
+    LexerError::IOError(err.to_string())
   }
 }
 

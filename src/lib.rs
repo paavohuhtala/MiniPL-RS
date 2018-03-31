@@ -1,5 +1,4 @@
 #![feature(slice_patterns)]
-#![feature(try_trait)]
 
 use std::rc::Rc;
 
@@ -12,7 +11,9 @@ pub mod semantic;
 
 use common::errors::*;
 use common::logger::Logger;
+use common::util::ResultExt;
 use diagnostics::file_context::*;
+use parsing::ast::StatementWithCtx;
 use parsing::char_stream::CharStream;
 use parsing::lexer::BufferedLexer;
 use parsing::parser::Parser;
@@ -21,12 +22,12 @@ use semantic::type_checker::*;
 
 #[derive(Debug)]
 pub enum ExecutionError {
-  ParserError(ParserError),
+  ParserError(ParserErrorWithCtx),
   TypeError(TypeError),
 }
 
-impl From<ParserError> for ExecutionError {
-  fn from(err: ParserError) -> ExecutionError {
+impl From<ParserErrorWithCtx> for ExecutionError {
+  fn from(err: ParserErrorWithCtx) -> ExecutionError {
     ExecutionError::ParserError(err)
   }
 }
@@ -57,18 +58,15 @@ pub fn run_script<T: Io>(
   let mut parser = Parser::new(lexer, logger.clone());
 
   // ... which we'll use to obtain the program AST.
-  let program = parser.parse_program().map_err(|err| {
-    err
+  let program = parser.parse_program().map_err(|errors| {
+    errors
       .into_iter()
-      .map(ExecutionError::ParserError)
+      .map(|err| ExecutionError::ParserError(err))
       .collect::<Vec<ExecutionError>>()
   })?;
 
   // Run the type checker.
-  type_check(&program).map_err(|err| {
-    let execution_err: ExecutionError = err.into();
-    vec![execution_err]
-  })?;
+  type_check(&program).map_err(|err| ExecutionError::TypeError(err)).vec_err()?;
 
   // If type checking was succesful, create a new interpreter and run the program.
   let mut interpreter = Interpreter::new(io, &file_context);

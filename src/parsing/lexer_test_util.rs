@@ -42,7 +42,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, LexerError> {
   let mut tokens: Vec<Token> = Vec::new();
 
   while !lexer.reached_end() {
-    let token_with_ctx = lexer.next()?;
+    let token_with_ctx = lexer.next().map_err(|err| err.0)?;
     tokens.push(token_with_ctx.token);
   }
 
