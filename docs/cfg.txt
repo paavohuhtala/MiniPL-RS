@@ -17,7 +17,7 @@ precedence_3 -> precedence_4
 precedence_4 -> "!" precedence_4
 precedence_4 -> terminal_expression 
 
-terminal_expression -> integer | identifier | "(" expression ")"
+terminal_expression -> integer | string | identifier | "(" expression ")"
 
 program -> statement* end_of_file
 
@@ -25,6 +25,7 @@ statement -> print_statement
 statement -> read_statement
 statement -> var_statement
 statement -> assert_statement
+statement -> for_statement
 statement -> assign_statement
 
 print_statement -> "print" expression ";"
