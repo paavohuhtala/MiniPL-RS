@@ -1,0 +1,41 @@
+type_name -> "int" | "string"
+
+expression -> precedence_1
+precedence_1 -> precedence_1 "=" precedence_2
+precedence_1 -> precedence_1 "<" precedence_2
+precedence_1 -> precedence_2
+
+precedence_2 -> precedence_2 "+" precedence_3
+precedence_2 -> precedence_2 "-" precedence_3
+precedence_2 -> precedence_2 "&" precedence_3
+precedence_2 -> precedence_3
+
+precedence_3 -> precedence_3 "*" precedence_4
+precedence_3 -> precedence_3 "/" precedence_4
+precedence_3 -> precedence_4
+
+precedence_4 -> "!" precedence_4
+precedence_4 -> terminal_expression 
+
+terminal_expression -> integer | identifier | "(" expression ")"
+
+program -> statement* end_of_file
+
+statement -> print_statement
+statement -> read_statement
+statement -> var_statement
+statement -> assert_statement
+statement -> assign_statement
+
+print_statement -> "print" expression ";"
+read_statement -> "read" identifier ";"
+
+var_statement -> "var" identifier ":" type_name [":=" expression ] ";"
+assert_statement -> "assert" "(" expression ")" ";"
+
+for_statement ->
+    "for" identifier "in" expression ".." expression "do"
+        statement*
+    "end" "for" ";"
+
+assign_statement -> identifier ":=" expression ";"
