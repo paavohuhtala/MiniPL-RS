@@ -1,6 +1,5 @@
 use std::io::Error;
 
-use diagnostics::file_context::FileContextSource;
 use parsing::token::*;
 
 // The error types form a hierarchy.
