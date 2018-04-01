@@ -1,4 +1,4 @@
-type_name -> "int" | "string"
+type_name -> "int" | "string" | "bool"
 
 expression -> precedence_1
 precedence_1 -> precedence_1 "=" precedence_2
