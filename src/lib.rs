@@ -46,6 +46,7 @@ pub fn run_script<T: Io>(
   logger: Rc<Logger>,
   file_context: Option<Rc<FileContextSource>>,
 ) -> Result<(), Vec<ExecutionError>> {
+  // If we don't have a file context source, construct a new one.
   let file_context =
     file_context.unwrap_or_else(|| Rc::new(FileContextSource::from_str(source, None)));
 
