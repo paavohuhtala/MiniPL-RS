@@ -4,10 +4,10 @@ extern crate miniplrs;
 
 use std::rc::Rc;
 
+use miniplrs::common::errors::*;
 use miniplrs::common::logger::NullLogger;
 use miniplrs::run_script;
 use miniplrs::runtime::Io;
-use miniplrs::common::errors::*;
 
 struct TestIo {
   input: Vec<String>,
@@ -310,6 +310,23 @@ assert (x = nTimes);
       "ASSERTION FAILED:\n[   9]  assert (x = nTimes);\n"
     ]
   }
+
+example_program_3(
+r#"print "Give a number";
+var n : int;
+read n;
+var v : int := 1;
+var i : int;
+for i in 1..n do
+    v := v * i;
+end for;
+print "The result is: ";
+print v;
+"#) {
+  result Ok(_),
+  input ["5"],
+  output ["Give a number", "The result is: ", "120"]
+}
 
   print_uninitialised_variable(r#"
     var a : int;

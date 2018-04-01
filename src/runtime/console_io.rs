@@ -1,4 +1,4 @@
-use std::io::{stdin, BufRead};
+use std::io::{stdin, stdout, BufRead, Write};
 
 use runtime::io::Io;
 
@@ -20,5 +20,6 @@ impl Io for ConsoleIo {
 
   fn write(&mut self, s: &str) {
     print!("{}", s);
+    stdout().flush().ok().unwrap();
   }
 }
