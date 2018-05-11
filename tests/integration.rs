@@ -1,5 +1,3 @@
-#![feature(slice_patterns)]
-
 extern crate miniplrs;
 
 use std::rc::Rc;
@@ -79,11 +77,11 @@ macro_rules! integration_tests {
   };
 }
 
-use miniplrs::ExecutionError;
 use miniplrs::common::errors::LexerError::*;
 use miniplrs::common::errors::ParserError::*;
 use miniplrs::parsing::token::TokenKind::*;
 use miniplrs::semantic::type_checker::TypeError::*;
+use miniplrs::ExecutionError;
 
 integration_tests! {
   empty_program("") {
