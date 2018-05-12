@@ -27,8 +27,8 @@ pub enum TypeError {
 
 impl ErrorWithReason for TypeError {
   fn get_reason(&self) -> Option<String> {
-    use TypeError::*;
     use common::types::TypeName::*;
+    use TypeError::*;
 
     fn format_type_name(type_name: TypeName) -> &'static str {
       match type_name {
@@ -58,16 +58,18 @@ impl ErrorWithReason for TypeError {
   }
 }
 
-struct Symbol {
+pub struct Symbol {
   type_of: TypeName,
   is_mutable: bool,
 }
 
-struct TypeCheckingContext {
-  symbols: HashMap<String, Symbol>,
-}
+pub struct TypeCheckingContext(pub HashMap<String, Symbol>);
 
 impl TypeCheckingContext {
+  pub fn new() -> TypeCheckingContext {
+    TypeCheckingContext(HashMap::new())
+  }
+
   fn get_literal_type(&self, literal: &LiteralValue) -> TypeName {
     use self::LiteralValue::*;
     match *literal {
@@ -86,7 +88,7 @@ impl TypeCheckingContext {
   }
 
   fn evaluate_variable_type(&self, variable: &str) -> Result<TypeName, TypeError> {
-    if let Some(symbol) = self.symbols.get(variable) {
+    if let Some(symbol) = self.0.get(variable) {
       Ok(symbol.type_of)
     } else {
       Err(TypeError::UndeclaredIdentifier(variable.to_string()))
@@ -140,7 +142,7 @@ impl TypeCheckingContext {
 
   fn set_variable_mutability(&mut self, name: &str, is_mutable: bool) {
     let symbol = self
-      .symbols
+      .0
       .get_mut(name)
       .expect("Symbol should always be defined at this point.");
     symbol.is_mutable = is_mutable;
@@ -148,7 +150,7 @@ impl TypeCheckingContext {
 
   fn assert_mutable(&self, name: &str) -> Result<(), TypeError> {
     let symbol = self
-      .symbols
+      .0
       .get(name)
       .expect("Symbol should always be defined at this point");
     if !symbol.is_mutable {
@@ -166,7 +168,7 @@ impl TypeCheckingContext {
         ref initial,
       } => {
         // If the variable already exists in the symbol table, report error.
-        if self.symbols.get(name).is_some() {
+        if self.0.get(name).is_some() {
           return Err(TypeError::RedeclaredIdentifier(name.to_string()));
         }
 
@@ -177,7 +179,7 @@ impl TypeCheckingContext {
         }
 
         // Add the symbol to the symbol table.
-        self.symbols.insert(
+        self.0.insert(
           name.to_string(),
           Symbol {
             type_of: *type_of,
@@ -237,16 +239,14 @@ impl TypeCheckingContext {
   }
 }
 
-pub fn type_check(program: &[StatementWithCtx]) -> Result<(), TypeError> {
-  let mut context = TypeCheckingContext {
-    symbols: HashMap::new(),
-  };
+pub fn type_check(program: &[StatementWithCtx]) -> Result<TypeCheckingContext, TypeError> {
+  let mut context = TypeCheckingContext::new();
 
   for statement in program {
     context.type_check_statement(&statement.statement)?;
   }
 
-  Ok(())
+  Ok(context)
 }
 
 #[cfg(test)]
@@ -258,9 +258,7 @@ mod tests {
   use semantic::test_util::*;
 
   fn ctx() -> TypeCheckingContext {
-    TypeCheckingContext {
-      symbols: HashMap::new(),
-    }
+    TypeCheckingContext(HashMap::new())
   }
 
   macro_rules! type_shorthand {
