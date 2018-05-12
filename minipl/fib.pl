@@ -8,10 +8,10 @@ print prev1;
 
 var i : int;
 
-for i in 0 .. 25 do
+for i in 0 .. 25 {
     var next: int := prev1 + prev2;
     print ", ";
     print next;
     prev2 := prev1;
     prev1 := next;
-end for;
+}

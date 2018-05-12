@@ -276,13 +276,11 @@ impl<T: TokenStream> Parser<T> {
 
     let to = self.parse_expression().vec_err()?;
 
-    self.expect_eq(&Token::Do).vec_err()?;
+    self.expect_eq(&Token::LCurly).vec_err()?;
 
     let run = self.parse_statement_list()?;
 
-    self.expect_eq(&Token::End).vec_err()?;
-    self.expect_eq(&Token::For).vec_err()?;
-    self.expect_eq(&Token::Semicolon).vec_err()?;
+    self.expect_eq(&Token::RCurly).vec_err()?;
 
     Ok(Statement::For {
       variable,
@@ -313,8 +311,8 @@ impl<T: TokenStream> Parser<T> {
 
     loop {
       let next = self.lexer.peek().map_err(|err| err.into()).vec_err()?;
-      // If we reached end of file OR the end keyword, stop parsing.
-      if next.token == Token::EndOfFile || next.token == Token::End {
+      // If we reached end of file OR the end of block, stop parsing.
+      if next.token == Token::EndOfFile || next.token == Token::RCurly {
         break;
       }
 

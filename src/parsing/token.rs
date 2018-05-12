@@ -9,6 +9,8 @@ pub enum Token {
   Semicolon,
   LParen,
   RParen,
+  LCurly,
+  RCurly,
   Colon,
   Assign,
   Print,
@@ -18,8 +20,6 @@ pub enum Token {
   For,
   In,
   Range,
-  Do,
-  End,
   EndOfFile,
 }
 
@@ -38,6 +38,8 @@ pub enum TokenKind {
   SemicolonK,
   LParenK,
   RParenK,
+  LCurlyK,
+  RCurlyK,
   ColonK,
   AssignK,
   PrintK,
@@ -47,33 +49,33 @@ pub enum TokenKind {
   ForK,
   InK,
   RangeK,
-  DoK,
-  EndK,
   EndOfFileK,
 }
 
 impl Token {
   pub fn get_kind(&self) -> TokenKind {
+    use self::Token::*;
+    use self::TokenKind::*;
     match *self {
-      Token::Identifier(_) => TokenKind::IdentifierK,
-      Token::Literal(_) => TokenKind::LiteralK,
-      Token::Type(_) => TokenKind::TypeK,
-      Token::Operator(_) => TokenKind::OperatorK,
-      Token::Semicolon => TokenKind::SemicolonK,
-      Token::Colon => TokenKind::ColonK,
-      Token::LParen => TokenKind::LParenK,
-      Token::RParen => TokenKind::RParenK,
-      Token::Assign => TokenKind::AssignK,
-      Token::Print => TokenKind::PrintK,
-      Token::Read => TokenKind::ReadK,
-      Token::Var => TokenKind::VarK,
-      Token::Assert => TokenKind::AssertK,
-      Token::For => TokenKind::ForK,
-      Token::In => TokenKind::InK,
-      Token::Range => TokenKind::RangeK,
-      Token::Do => TokenKind::DoK,
-      Token::End => TokenKind::EndK,
-      Token::EndOfFile => TokenKind::EndOfFileK,
+      Identifier(_) => IdentifierK,
+      Literal(_) => LiteralK,
+      Type(_) => TypeK,
+      Operator(_) => OperatorK,
+      Semicolon => SemicolonK,
+      Colon => ColonK,
+      LParen => LParenK,
+      RParen => RParenK,
+      LCurly => LCurlyK,
+      RCurly => RCurlyK,
+      Assign => AssignK,
+      Print => PrintK,
+      Read => ReadK,
+      Var => VarK,
+      Assert => AssertK,
+      For => ForK,
+      In => InK,
+      Range => RangeK,
+      EndOfFile => EndOfFileK,
     }
   }
 

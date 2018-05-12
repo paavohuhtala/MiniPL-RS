@@ -54,8 +54,6 @@ fn read_keyword_or_identifier(input: &mut CharStream) -> Result<Token, LexerErro
     ['a', 's', 's', 'e', 'r', 't'] => Ok(Token::Assert),
     ['f', 'o', 'r'] => Ok(Token::For),
     ['i', 'n'] => Ok(Token::In),
-    ['d', 'o'] => Ok(Token::Do),
-    ['e', 'n', 'd'] => Ok(Token::End),
     _ => {
       let name: String = chars.iter().collect();
 
@@ -79,6 +77,8 @@ fn parse_single_char_token(ch: char) -> Token {
     ';' => Semicolon,
     '(' => LParen,
     ')' => RParen,
+    '{' => LCurly,
+    '}' => RCurly,
     '+' => Operator(BinaryOperator(Add)),
     '-' => Operator(BinaryOperator(Sub)),
     '*' => Operator(BinaryOperator(Mul)),
@@ -121,7 +121,7 @@ fn next_token(input: &mut CharStream, logger: Rc<Logger>) -> Result<TokenWithCtx
   let first = input.peek()?;
 
   let token = match first {
-    ';' | '(' | ')' | '+' | '-' | '*' | '<' | '=' | '&' | '!' => {
+    ';' | '(' | ')' | '+' | '-' | '*' | '<' | '=' | '&' | '!' | '{' | '}' => {
       input.advance();
       with_ctx(Ok(parse_single_char_token(first)))
     }

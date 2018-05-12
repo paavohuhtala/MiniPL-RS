@@ -15,7 +15,7 @@ var b : int := 20;
 
 var sumSquared : int := (a + b) * (a + b);
 
-// A few assdertions
+// A few assertions
 assert sumSquared = (b + a) * (b + a);
 assert sumSquared = 900;
 

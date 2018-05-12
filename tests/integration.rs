@@ -164,9 +164,9 @@ integration_tests! {
 
   for_basic(r#"
     var i : int;
-    for i in 0 .. 3 do
+    for i in 0 .. 3 {
       print i;
-    end for;
+    }
   "#) {
     result Ok(_),
     input [],
@@ -175,12 +175,12 @@ integration_tests! {
 
   for_nested(r#"
     var x : int;
-    for x in 1 .. 3 do
+    for x in 1 .. 3 {
       var y: int;
-      for y in 1 .. 3 do
+      for y in 1 .. 3 {
         print x * y;
-      end for;
-    end for;
+      }
+    }
   "#) {
     result Ok(_),
     input [],
@@ -232,9 +232,9 @@ integration_tests! {
 
   loop_variable_mutability(r#"
     var i : int;
-    for i in 0 .. 10 do
+    for i in 0 .. 10 {
       i := 100;
-    end for;
+    }
   "#) {
     result Err(&[ExecutionError::TypeError(AssignToImmutable(_))]),
     input [],
@@ -292,10 +292,10 @@ r#"var nTimes : int := 0;
 print "How many times?";
 read nTimes;
 var x : int;
-for x in 0..nTimes-1 do
+for x in 0..nTimes-1 {
     print x;
     print " : Hello, World!\n";
-end for;
+}
 assert (x = nTimes);
 "#) {
     result Ok(_),
@@ -315,9 +315,9 @@ var n : int;
 read n;
 var v : int := 1;
 var i : int;
-for i in 1..n do
+for i in 1..n {
     v := v * i;
-end for;
+}
 print "The result is: ";
 print v;
 "#) {
