@@ -1,21 +1,20 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use parsing::ast::*;
 use semantic::types::Symbol;
 
 type ScopeKey = usize;
 
-type StatementList<'a> = &'a [StatementWithCtx];
-
 #[derive(Debug)]
 pub struct Scope {
   pub key: ScopeKey,
   parent: ScopeKey,
+  children: HashSet<ScopeKey>,
   symbols: HashMap<String, Symbol>,
 }
 
 impl Scope {
-  fn _get_parent(&self) -> Option<ScopeKey> {
+  fn get_parent_key(&self) -> Option<ScopeKey> {
     if self.key == self.parent {
       None
     } else {
@@ -27,6 +26,7 @@ impl Scope {
 #[derive(Debug)]
 pub struct ScopeTree {
   scopes: HashMap<ScopeKey, Scope>,
+  scope_symbols_cache: HashMap<ScopeKey, HashMap<String, Symbol>>,
   next_scope_id: ScopeKey,
 }
 
@@ -37,12 +37,80 @@ impl ScopeTree {
     id
   }
 
-  fn new_scope(&mut self, parent: ScopeKey) -> Scope {
-    Scope {
-      key: self.next_scope_id(),
-      symbols: HashMap::new(),
-      parent,
+  fn get_parent(&self, scope: &Scope) -> Option<&Scope> {
+    self.scopes.get(&scope.get_parent_key()?)
+  }
+
+  fn get_global_scope(&self) -> &Scope {
+    self
+      .scopes
+      .get(&0)
+      .expect("Global scope should always exist")
+  }
+
+  fn add_new_scope(&mut self, parent_key: ScopeKey) -> ScopeKey {
+    let key = self.next_scope_id();
+
+    if key != parent_key {
+      let parent = self.scopes.get_mut(&parent_key).unwrap();
+      parent.children.insert(key);
     }
+
+    let scope = Scope {
+      key,
+      symbols: HashMap::new(),
+      children: HashSet::new(),
+      parent: parent_key,
+    };
+
+    self.scopes.insert(key, scope);
+
+    key
+  }
+
+  fn clear_caches(&mut self, scope_key: ScopeKey) {
+    self.scope_symbols_cache.remove(&scope_key);
+
+    // Is there any way to avoid the copy?
+    let children = &self.scopes.get(&scope_key).unwrap().children.clone();
+
+    for &sub_scope_key in children {
+      self.clear_caches(sub_scope_key);
+    }
+  }
+
+  fn define_symbol(&mut self, scope_key: ScopeKey, name: &str, symbol: Symbol) {
+    {
+      let scope = self.scopes.get_mut(&scope_key).unwrap();
+      scope.symbols.insert(name.to_string(), symbol);
+    }
+
+    self.clear_caches(scope_key);
+  }
+
+  fn traverse_symbols_in_scope(&mut self, scope_key: ScopeKey) {
+    let scope = self.scopes.get(&scope_key).unwrap();
+    let mut symbols = HashMap::new();
+
+    fn add_symbols(scope_tree: &ScopeTree, scope: &Scope, symbols: &mut HashMap<String, Symbol>) {
+      if let Some(parent_scope) = scope_tree.get_parent(scope) {
+        add_symbols(scope_tree, parent_scope, symbols);
+      }
+
+      symbols.extend(scope.symbols.clone());
+    }
+
+    add_symbols(self, scope, &mut symbols);
+
+    self.scope_symbols_cache.insert(scope_key, symbols);
+  }
+
+  pub fn get_symbols_in_scope(&mut self, scope_key: ScopeKey) -> &HashMap<String, Symbol> {
+    if !self.scope_symbols_cache.contains_key(&scope_key) {
+      self.traverse_symbols_in_scope(scope_key)
+    }
+
+    self.scope_symbols_cache.get(&scope_key).unwrap()
   }
 
   pub fn visit_statement(&mut self, statement: &StatementWithCtx, parent: ScopeKey) {
@@ -52,9 +120,7 @@ impl ScopeTree {
     };
 
     if let Some(block) = block_or_none {
-      let scope = self.new_scope(parent);
-      let scope_key = scope.key;
-      self.scopes.insert(scope.key, scope);
+      let scope_key = self.add_new_scope(parent);
 
       for statement in block {
         self.visit_statement(&statement, scope_key);
@@ -65,34 +131,18 @@ impl ScopeTree {
   pub fn new() -> ScopeTree {
     let mut scope_tree = ScopeTree {
       scopes: HashMap::new(),
-      next_scope_id: 1,
+      scope_symbols_cache: HashMap::new(),
+      next_scope_id: 0,
     };
 
-    scope_tree.scopes.insert(
-      0,
-      Scope {
-        key: 0,
-        parent: 0,
-        symbols: HashMap::new(),
-      },
-    );
+    // Add the global scope
+    scope_tree.add_new_scope(0);
 
     scope_tree
   }
 
   pub fn from_program<'a>(program: Program<'a>) -> ScopeTree {
-    let mut scope_tree = ScopeTree {
-      scopes: HashMap::new(),
-      next_scope_id: 1,
-    };
-
-    let global_scope = Scope {
-      key: 0,
-      parent: 0,
-      symbols: HashMap::new(),
-    };
-
-    scope_tree.scopes.insert(0, global_scope);
+    let mut scope_tree = ScopeTree::new();
 
     for statement in program {
       scope_tree.visit_statement(statement, 0);

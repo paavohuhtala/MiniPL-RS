@@ -1,6 +1,6 @@
 use common::types::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Symbol {
   pub type_of: TypeName,
   pub is_mutable: bool,
