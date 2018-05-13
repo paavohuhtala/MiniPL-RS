@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use common::errors::ErrorWithReason;
 use common::types::*;
 use parsing::ast::*;
-use semantic::scope_tree::ScopeTree;
+use semantic::scope_tree::*;
 use semantic::types::*;
 
 #[derive(Debug, PartialEq)]
@@ -60,11 +58,12 @@ impl ErrorWithReason for TypeError {
   }
 }
 
-pub struct TypeCheckingContext(pub HashMap<String, Symbol>);
+#[derive(Debug)]
+pub struct TypeCheckingContext(pub ScopeTree);
 
 impl TypeCheckingContext {
   pub fn new() -> TypeCheckingContext {
-    TypeCheckingContext(HashMap::new())
+    TypeCheckingContext(ScopeTree::new())
   }
 
   fn get_literal_type(&self, literal: &LiteralValue) -> TypeName {
@@ -76,23 +75,32 @@ impl TypeCheckingContext {
   }
 
   fn evaluate_binary_expression_type(
-    &self,
+    &mut self,
+    scope: ScopeKey,
     params: &(Expression, Expression),
   ) -> Result<(TypeName, TypeName), TypeError> {
-    let left = self.evaluate_expression_type(&params.0)?;
-    let right = self.evaluate_expression_type(&params.1)?;
+    let left = self.evaluate_expression_type(scope, &params.0)?;
+    let right = self.evaluate_expression_type(scope, &params.1)?;
     Ok((left, right))
   }
 
-  fn evaluate_variable_type(&self, variable: &str) -> Result<TypeName, TypeError> {
-    if let Some(symbol) = self.0.get(variable) {
+  fn evaluate_variable_type(
+    &mut self,
+    scope: ScopeKey,
+    variable: &str,
+  ) -> Result<TypeName, TypeError> {
+    if let Some(symbol) = self.0.get_symbol(scope, variable) {
       Ok(symbol.type_of)
     } else {
       Err(TypeError::UndeclaredIdentifier(variable.to_string()))
     }
   }
 
-  fn evaluate_expression_type(&self, expression: &Expression) -> Result<TypeName, TypeError> {
+  fn evaluate_expression_type(
+    &mut self,
+    scope: ScopeKey,
+    expression: &Expression,
+  ) -> Result<TypeName, TypeError> {
     use self::Expression::*;
     use self::TypeError::*;
     use common::types::BinaryOperator::*;
@@ -101,9 +109,9 @@ impl TypeCheckingContext {
 
     match *expression {
       Literal(ref literal) => Ok(self.get_literal_type(literal)),
-      Variable(ref variable) => self.evaluate_variable_type(variable),
+      Variable(ref variable) => self.evaluate_variable_type(scope, variable),
       BinaryOp(ref op, ref params) => {
-        let (left, right) = self.evaluate_binary_expression_type(params)?;
+        let (left, right) = self.evaluate_binary_expression_type(scope, params)?;
         match (*op, left, right) {
           (Add, IntType, IntType)
           | (Sub, IntType, IntType)
@@ -120,7 +128,7 @@ impl TypeCheckingContext {
         }
       }
       UnaryOp(ref op, ref param) => {
-        let inner = self.evaluate_expression_type(param)?;
+        let inner = self.evaluate_expression_type(scope, param)?;
         match (*op, inner) {
           (Not, BoolType) => Ok(BoolType),
           (op, inner) => Err(InvalidUnaryOp(op, inner)),
@@ -137,19 +145,23 @@ impl TypeCheckingContext {
     }
   }
 
-  fn set_variable_mutability(&mut self, name: &str, is_mutable: bool) {
+  fn set_variable_mutability(&mut self, scope: ScopeKey, name: &str, is_mutable: bool) {
     let symbol = self
       .0
-      .get_mut(name)
+      .get_symbol_mut(scope, name)
       .expect("Symbol should always be defined at this point.");
+    println!("Heh symbooli: {:?}", symbol);
     symbol.is_mutable = is_mutable;
   }
 
-  fn assert_mutable(&self, name: &str) -> Result<(), TypeError> {
+  fn assert_mutable(&mut self, scope: ScopeKey, name: &str) -> Result<(), TypeError> {
     let symbol = self
       .0
-      .get(name)
+      .get_symbol(scope, name)
       .expect("Symbol should always be defined at this point");
+
+    println!("{:?}", symbol);
+
     if !symbol.is_mutable {
       Err(TypeError::AssignToImmutable(name.to_string()))
     } else {
@@ -157,7 +169,11 @@ impl TypeCheckingContext {
     }
   }
 
-  fn type_check_statement(&mut self, statement: &Statement) -> Result<(), TypeError> {
+  fn type_check_statement(
+    &mut self,
+    scope: ScopeKey,
+    statement: &Statement,
+  ) -> Result<(), TypeError> {
     match *statement {
       Statement::Declare {
         ref name,
@@ -165,19 +181,20 @@ impl TypeCheckingContext {
         ref initial,
       } => {
         // If the variable already exists in the symbol table, report error.
-        if self.0.get(name).is_some() {
+        if self.0.get_symbol(scope, name).is_some() {
           return Err(TypeError::RedeclaredIdentifier(name.to_string()));
         }
 
         // If the variable has been initialised, make sure it matches the type annotation.
         if let Some(ref initial_value) = *initial {
-          let initial_value_type = self.evaluate_expression_type(initial_value)?;
+          let initial_value_type = self.evaluate_expression_type(scope, initial_value)?;
           Self::assert_types_equal(*type_of, initial_value_type)?;
         }
 
         // Add the symbol to the symbol table.
-        self.0.insert(
-          name.to_string(),
+        self.0.define_symbol(
+          scope,
+          name,
           Symbol {
             type_of: *type_of,
             is_mutable: true,
@@ -186,26 +203,26 @@ impl TypeCheckingContext {
         Ok(())
       }
       Statement::Assign(ref name, ref value) => {
-        let variable_type = self.evaluate_variable_type(name)?;
-        let value_type = self.evaluate_expression_type(value)?;
+        let variable_type = self.evaluate_variable_type(scope, name)?;
+        let value_type = self.evaluate_expression_type(scope, value)?;
         Self::assert_types_equal(variable_type, value_type)?;
-        self.assert_mutable(name)
+        self.assert_mutable(scope, name)
       }
       Statement::Print(ref expr) => {
         // Only strings and ints can be printed.
-        match self.evaluate_expression_type(expr)? {
+        match self.evaluate_expression_type(scope, expr)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::PrintArgumentError(TypeName::BoolType)),
         }
       }
       Statement::Read(ref name) => {
         // Make sure the variable exists, and is either an int or string.
-        match self.evaluate_variable_type(name)? {
+        match self.evaluate_variable_type(scope, name)? {
           TypeName::IntType | TypeName::StringType => Ok(()),
           TypeName::BoolType => Err(TypeError::ReadArgumentError(TypeName::BoolType)),
         }
       }
-      Statement::Assert(ref expr) => match self.evaluate_expression_type(expr)? {
+      Statement::Assert(ref expr) => match self.evaluate_expression_type(scope, expr)? {
         TypeName::BoolType => Ok(()),
         other => Err(TypeError::AssertArgumentError(other)),
       },
@@ -215,20 +232,30 @@ impl TypeCheckingContext {
         ref to,
         ref run,
       } => {
+        let inner_scope = self.0.add_new_scope(scope);
         // Loop variable must be a mutable integer
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_variable_type(variable)?)?;
-        self.assert_mutable(variable)?;
+        Self::assert_types_equal(
+          TypeName::IntType,
+          self.evaluate_variable_type(inner_scope, variable)?,
+        )?;
+        self.assert_mutable(inner_scope, variable)?;
 
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(from)?)?;
-        Self::assert_types_equal(TypeName::IntType, self.evaluate_expression_type(to)?)?;
+        Self::assert_types_equal(
+          TypeName::IntType,
+          self.evaluate_expression_type(inner_scope, from)?,
+        )?;
+        Self::assert_types_equal(
+          TypeName::IntType,
+          self.evaluate_expression_type(inner_scope, to)?,
+        )?;
 
-        self.set_variable_mutability(variable, false);
+        self.set_variable_mutability(inner_scope, variable, false);
 
         for statement in run {
-          self.type_check_statement(&statement.statement)?;
+          self.type_check_statement(inner_scope, &statement.statement)?;
         }
 
-        self.set_variable_mutability(variable, true);
+        self.set_variable_mutability(inner_scope, variable, true);
 
         Ok(())
       }
@@ -239,11 +266,13 @@ impl TypeCheckingContext {
 pub fn type_check(program: &[StatementWithCtx]) -> Result<TypeCheckingContext, TypeError> {
   let mut context = TypeCheckingContext::new();
 
-  let _tree = ScopeTree::from_program(program);
+  let global_scope_key = context.0.get_global_scope().key;
 
   for statement in program {
-    context.type_check_statement(&statement.statement)?;
+    context.type_check_statement(global_scope_key, &statement.statement)?;
   }
+
+  println!("{:#?}", context);
 
   Ok(context)
 }
@@ -257,7 +286,7 @@ mod tests {
   use semantic::test_util::*;
 
   fn ctx() -> TypeCheckingContext {
-    TypeCheckingContext(HashMap::new())
+    TypeCheckingContext::new()
   }
 
   macro_rules! type_shorthand {
@@ -279,11 +308,12 @@ mod tests {
       $(
         #[test]
         fn $op() {
-          let ctx = ctx();
+          let mut ctx = ctx();
 
           for a in &[IntType, StringType, BoolType] {
             for b in &[IntType, StringType, BoolType] {
               let result = ctx.evaluate_expression_type(
+                0,
                 &ast_test_util::$op(expr_of_type(*a), expr_of_type(*b))
               );
               $(
