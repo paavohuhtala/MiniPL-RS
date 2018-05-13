@@ -7,7 +7,7 @@ pub enum TypeName {
   BoolType,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// These values exist at parse time.
 pub enum LiteralValue {
   StringLiteral(String),
@@ -62,7 +62,7 @@ impl fmt::Display for Value {
   }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BinaryOperator {
   Add,
   Sub,
@@ -73,18 +73,18 @@ pub enum BinaryOperator {
   And,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum UnaryOperator {
   Not,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator {
   BinaryOperator(BinaryOperator),
   UnaryOperator(UnaryOperator),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Arity {
   Unary,
   Binary,
@@ -92,8 +92,8 @@ pub enum Arity {
 
 impl Operator {
   pub fn get_precedence(self) -> u8 {
-    use self::Operator::*;
     use self::BinaryOperator::*;
+    use self::Operator::*;
     use self::UnaryOperator::*;
 
     match self {

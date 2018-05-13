@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use common::types::*;
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Expression {
   Literal(LiteralValue),
   Variable(String),
@@ -12,7 +12,7 @@ pub enum Expression {
   UnaryOp(UnaryOperator, Box<Expression>),
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Statement {
   Declare {
     name: String,
@@ -24,17 +24,19 @@ pub enum Statement {
     variable: String,
     from: Expression,
     to: Expression,
-    run: Vec<StatementWithCtx>,
+    run: Block,
   },
   Print(Expression),
   Read(String),
   Assert(Expression),
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct StatementWithCtx {
   pub source_position: Range<usize>,
   pub statement: Statement,
 }
+
+pub type Block = Vec<StatementWithCtx>;
 
 pub type Program<'a> = &'a [StatementWithCtx];

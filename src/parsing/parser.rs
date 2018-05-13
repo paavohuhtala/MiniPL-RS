@@ -276,11 +276,7 @@ impl<T: TokenStream> Parser<T> {
 
     let to = self.parse_expression().vec_err()?;
 
-    self.expect_eq(&Token::LCurly).vec_err()?;
-
-    let run = self.parse_statement_list()?;
-
-    self.expect_eq(&Token::RCurly).vec_err()?;
+    let run = self.parse_block()?;
 
     Ok(Statement::For {
       variable,
@@ -304,6 +300,13 @@ impl<T: TokenStream> Parser<T> {
       }).with_ctx(first.offset)
         .vec_err(),
     }
+  }
+
+  pub fn parse_block(&mut self) -> Result<Block, ParserErrors> {
+    self.expect_eq(&Token::LCurly).vec_err()?;
+    let statements = self.parse_statement_list()?;
+    self.expect_eq(&Token::RCurly).vec_err()?;
+    Ok(statements)
   }
 
   pub fn parse_statement_list(&mut self) -> Result<Vec<StatementWithCtx>, ParserErrors> {

@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use common::errors::ErrorWithReason;
 use common::types::*;
 use parsing::ast::*;
+use semantic::scope_tree::ScopeTree;
+use semantic::types::*;
 
 #[derive(Debug, PartialEq)]
 pub enum TypeError {
@@ -56,11 +58,6 @@ impl ErrorWithReason for TypeError {
       _ => None,
     }
   }
-}
-
-pub struct Symbol {
-  type_of: TypeName,
-  is_mutable: bool,
 }
 
 pub struct TypeCheckingContext(pub HashMap<String, Symbol>);
@@ -241,6 +238,8 @@ impl TypeCheckingContext {
 
 pub fn type_check(program: &[StatementWithCtx]) -> Result<TypeCheckingContext, TypeError> {
   let mut context = TypeCheckingContext::new();
+
+  let _tree = ScopeTree::from_program(program);
 
   for statement in program {
     context.type_check_statement(&statement.statement)?;
