@@ -192,14 +192,7 @@ impl TypeCheckingContext {
         }
 
         // Add the symbol to the symbol table.
-        self.0.define_symbol(
-          scope,
-          name,
-          Symbol {
-            type_of: *type_of,
-            is_mutable: true,
-          },
-        );
+        self.0.define_symbol(scope, name, *type_of, true);
         Ok(())
       }
       Statement::Assign(ref name, ref value) => {

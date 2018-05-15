@@ -5,3 +5,7 @@ Cargo.lock
 
 /target
 **/*.rs.bk
+
+/rls
+
+*.zip
