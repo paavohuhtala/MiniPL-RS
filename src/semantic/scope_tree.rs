@@ -1,9 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use std::iter;
 
 use common::types::TypeName;
-use parsing::ast::*;
-use semantic::types::*;
 
 pub type SymbolKey = usize;
 
@@ -103,9 +100,9 @@ impl ScopeTree {
     self.scope_symbols_cache.remove(&scope_key);
 
     // Is there any way to avoid the copy?
-    let children = &self.scopes.get(&scope_key).unwrap().children.clone();
+    let children = self.scopes[&scope_key].children.clone();
 
-    for &sub_scope_key in children {
+    for sub_scope_key in children {
       self.clear_caches(sub_scope_key);
     }
   }
@@ -142,7 +139,7 @@ impl ScopeTree {
   fn traverse_symbols_in_scope(&mut self, scope_key: ScopeKey) {
     let mut symbol_ids = HashMap::new();
     {
-      let scope = self.scopes.get(&scope_key).unwrap();
+      let scope = &self.scopes[&scope_key]; // .get(&scope_key).unwrap();
 
       let mut scopes = vec![scope];
 
@@ -175,7 +172,7 @@ impl ScopeTree {
       self.traverse_symbols_in_scope(scope_key)
     }
 
-    self.scope_symbols_cache.get(&scope_key).unwrap()
+    &self.scope_symbols_cache[&scope_key]
   }
 
   pub fn get_symbols_in_scope_mut(
@@ -189,21 +186,6 @@ impl ScopeTree {
     self.scope_symbols_cache.get_mut(&scope_key).unwrap()
   }
 
-  pub fn visit_statement(&mut self, statement: &StatementWithCtx, parent: ScopeKey) {
-    let block_or_none = match statement.statement {
-      Statement::For { ref run, .. } => Some(run),
-      _ => None,
-    };
-
-    if let Some(block) = block_or_none {
-      let scope_key = self.add_new_scope(parent);
-
-      for statement in block {
-        self.visit_statement(&statement, scope_key);
-      }
-    }
-  }
-
   pub fn new() -> ScopeTree {
     let mut scope_tree = ScopeTree {
       scopes: HashMap::new(),
@@ -215,18 +197,6 @@ impl ScopeTree {
 
     // Add the global scope
     scope_tree.add_new_scope(0);
-
-    scope_tree
-  }
-
-  pub fn from_program<'a>(program: Program<'a>) -> ScopeTree {
-    let mut scope_tree = ScopeTree::new();
-
-    for statement in program {
-      scope_tree.visit_statement(statement, 0);
-    }
-
-    println!("{:#?}", scope_tree);
 
     scope_tree
   }

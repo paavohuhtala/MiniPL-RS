@@ -2,7 +2,6 @@ use common::errors::ErrorWithReason;
 use common::types::*;
 use parsing::ast::*;
 use semantic::scope_tree::*;
-use semantic::types::*;
 
 #[derive(Debug, PartialEq)]
 pub enum TypeError {
